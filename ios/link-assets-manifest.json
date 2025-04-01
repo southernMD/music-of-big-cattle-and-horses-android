@@ -1,0 +1,21 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "node_modules/@ant-design/icons-react-native/fonts/antfill.ttf",
+      "sha1": "56960e7721fc92b62e0f7c4d131ffe34ed042c49"
+    },
+    {
+      "path": "node_modules/@ant-design/icons-react-native/fonts/antoutline.ttf",
+      "sha1": "66720607b7496a48f145425386b2082b73662fd1"
+    },
+    {
+      "path": "src/assets/imgs/img.jpg",
+      "sha1": "1a5e50bfd7fe3dd0ec92b4257ff8adf10bfef3fb"
+    },
+    {
+      "path": "src/assets/mp3/music.mp3",
+      "sha1": "0d770ac5620a6fb0f0b938d54571b89468bc5d78"
+    }
+  ]
+}
