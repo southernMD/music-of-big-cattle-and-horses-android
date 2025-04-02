@@ -51,6 +51,7 @@ public class PlayMusicManager extends ReactContextBaseJavaModule {
             mediaPlayer.setOnCompletionListener(mp -> {
                 // 音乐播放完成时释放资源
                 releaseMediaPlayer();
+                promise.resolve("Music playing finish");
             });
         }
         if (!mediaPlayer.isPlaying()) {
