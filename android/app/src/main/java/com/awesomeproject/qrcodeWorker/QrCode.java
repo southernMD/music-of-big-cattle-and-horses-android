@@ -1,5 +1,6 @@
 package com.awesomeproject.qrcodeWorker;
 
+import com.awesomeproject.MainActivity;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -8,9 +9,17 @@ import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.app.ActivityManager;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
+import android.os.PowerManager;
+import android.provider.Settings;
 
+import androidx.work.Constraints;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.PeriodicWorkRequest;
@@ -35,7 +44,8 @@ public class QrCode extends ReactContextBaseJavaModule {
         super(context);
         reactContext = context;
 
-        workRequest = new OneTimeWorkRequest.Builder(QrCodeWorker.class).build();
+        requestIgnoreBatteryOptimizations(context);
+        requestFloatWindowPermission(context);
     }
 
     @Override
@@ -43,11 +53,74 @@ public class QrCode extends ReactContextBaseJavaModule {
         return "QrCode";
     }
 
-    private void sendEvent(ReactContext reactContext, String eventName, @Nullable WritableMap params) {
+    private static void sendEvent(ReactContext reactContext, String eventName, @Nullable WritableMap params) {
         reactContext
                 .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                 .emit(eventName, params);
     }
+
+    /**
+     * 忽略电池优化防止杀死后台任务
+     * */
+    @SuppressLint("ObsoleteSdkInt")
+    public static void requestIgnoreBatteryOptimizations(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            String packageName = context.getPackageName();
+            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                @SuppressLint("BatteryLife") Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.setData(Uri.parse("package:" + packageName));
+                System.out.println("请求用户允许应用忽略电池优化");
+                context.startActivity(intent);
+            }
+        }
+    }
+    /**
+     * 检查应用是否具有漂浮窗权限
+     *
+     * @param context 上下文对象
+     * @return true 表示有权限，false 表示无权限
+     */
+    public static boolean hasFloatWindowPermission(Context context) {
+        return Settings.canDrawOverlays(context);
+    }
+
+    /**
+     * 请求漂浮窗权限
+     *
+     * @param context 上下文对象
+     */
+    public static void requestFloatWindowPermission(Context context) {
+        // 如果没有权限，则引导用户到系统设置页面
+        if (!hasFloatWindowPermission(context)) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+            intent.setData(Uri.parse("package:" + context.getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+        }
+    }
+
+    public static void isRunningForegroundToApp1(Context context, final Class Class) {
+        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningTaskInfo> taskInfoList = activityManager.getRunningTasks(20);
+        /**枚举进程*/
+
+        for (ActivityManager.RunningTaskInfo taskInfo : taskInfoList) {
+            //*找到本应用的 task，并将它切换到前台
+            if (taskInfo.baseActivity.getPackageName().equals(context.getPackageName())) {
+                activityManager.moveTaskToFront(taskInfo.id, ActivityManager.MOVE_TASK_WITH_HOME);
+                Intent intent = new Intent(context, Class);
+                intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                intent.setAction(Intent.ACTION_MAIN);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                context.startActivity(intent);
+                break;
+            }
+        }
+    }
+
 
     @ReactMethod
     public void addListener(String eventName) {
@@ -79,6 +152,11 @@ public class QrCode extends ReactContextBaseJavaModule {
         }
         return false;
     }
+    @ReactMethod
+    public void startBackgroudTask2(Promise promise) {
+        isRunningForegroundToApp1(reactContext, MainActivity.class);
+        promise.resolve("后台启动应用");
+    }
 
     @ReactMethod
     public void startBackgroudTask(Promise promise) {
@@ -97,6 +175,14 @@ public class QrCode extends ReactContextBaseJavaModule {
                         params.putString("msg", "app已经在后台了，准备启动BackgroundPostionWorker");
                         sendEvent(reactContext, "backgroundTask", params);
 
+
+                        workRequest = new OneTimeWorkRequest.Builder(QrCodeWorker.class).setConstraints(
+                                new Constraints.Builder()
+                                        .setRequiresCharging(false) // 不需要设备充电
+                                        .setRequiresBatteryNotLow(false) // true电池电量不低
+                                        .build()
+                        )
+                        .build();
                         WorkManager.getInstance(reactContext).enqueue(workRequest);
 
                         WritableMap params2 = Arguments.createMap();
@@ -118,20 +204,19 @@ public class QrCode extends ReactContextBaseJavaModule {
         timer.schedule(task, 3000);
     }
 
-//    @ReactMethod
-//    public void stopBackgroudTask(Promise promise) {
-//        if(timer!=null) {
-//            timer.cancel();
-//            timer=null;
-//        }
-//
-//        // if(locationManager != null && locationListener != null) {
-//        //   locationManager.removeUpdates(locationListener);
-//        // }
-//        WritableMap params = Arguments.createMap();
-//        params.putString("msg", "BackgroundPostionWorker stop successed");
-//
-//        WorkManager.getInstance().cancelUniqueWork("BackgroundPositionWorker");
-//        promise.resolve(params);
-//    }
+    @ReactMethod
+    public void stopBackgroudTask(Promise promise) {
+        if(timer!=null) {
+            timer.cancel();
+            timer=null;
+        }
+
+        // if(locationManager != null && locationListener != null) {
+        //   locationManager.removeUpdates(locationListener);
+        // }
+        WritableMap params = Arguments.createMap();
+        WorkManager.getInstance(reactContext).cancelWorkById(workRequest.getId());
+        params.putString("msg", "BackgroundPostionWorker stop successed");
+        promise.resolve(params);
+    }
 }
