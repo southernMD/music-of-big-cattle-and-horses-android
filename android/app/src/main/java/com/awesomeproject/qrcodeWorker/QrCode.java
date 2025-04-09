@@ -14,6 +14,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.app.ActivityManager;
 import android.content.Intent;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
@@ -44,8 +45,6 @@ public class QrCode extends ReactContextBaseJavaModule {
         super(context);
         reactContext = context;
 
-        requestIgnoreBatteryOptimizations(context);
-        requestFloatWindowPermission(context);
     }
 
     @Override
@@ -85,6 +84,22 @@ public class QrCode extends ReactContextBaseJavaModule {
      */
     public static boolean hasFloatWindowPermission(Context context) {
         return Settings.canDrawOverlays(context);
+    }
+    /**
+     * 检查应用是否能始终在后台运行
+     *
+     * @param context 上下文对象
+     * @return true 表示有权限，false 表示无权限
+     */
+    @SuppressLint("ObsoleteSdkInt")
+    public static Boolean hasIgnoreBatteryOptimizations(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            String packageName = context.getPackageName();
+            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            return pm.isIgnoringBatteryOptimizations(packageName);
+        }else{
+            return true;
+        }
     }
 
     /**
@@ -152,6 +167,23 @@ public class QrCode extends ReactContextBaseJavaModule {
         }
         return false;
     }
+
+
+    @ReactMethod
+    public void refreshImg(String filePath, Promise promise) {
+        MediaScannerConnection.scanFile(
+                reactContext,
+                new String[]{filePath},
+                new String[]{"img/png"},
+                (path, uri) -> {
+                    if (uri != null) {
+                        promise.resolve("文件已添加到媒体库: " + uri.toString());
+                    } else {
+                        promise.resolve("文件添加到媒体库失败");
+                    }
+                }
+        );
+    }
     @ReactMethod
     public void startBackgroudTask2(Promise promise) {
         isRunningForegroundToApp1(reactContext, MainActivity.class);
@@ -218,5 +250,27 @@ public class QrCode extends ReactContextBaseJavaModule {
         WorkManager.getInstance(reactContext).cancelWorkById(workRequest.getId());
         params.putString("msg", "BackgroundPostionWorker stop successed");
         promise.resolve(params);
+    }
+
+    @ReactMethod
+    public void requestIgnoreBatteryTask(Promise promise) {
+        requestIgnoreBatteryOptimizations(reactContext);
+        promise.resolve("");
+    }
+
+    @ReactMethod
+    public void requestFloatWindowTask(Promise promise){
+        requestFloatWindowPermission(reactContext);
+        promise.resolve("");
+    }
+
+    @ReactMethod
+    public void hasFloatWindowPermissionTask(Promise promise){
+        promise.resolve(hasFloatWindowPermission(reactContext));
+    }
+
+    @ReactMethod
+    public void hasIgnoreBatteryPermissionTask(Promise promise){
+        promise.resolve(hasIgnoreBatteryOptimizations(reactContext));
     }
 }

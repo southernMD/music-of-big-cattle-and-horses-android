@@ -3,4 +3,5 @@ module.exports = {
         'node_modules/@ant-design/icons-react-native/fonts',
         './src/assets',
     ],
+    
 };

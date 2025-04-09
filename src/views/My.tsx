@@ -93,25 +93,56 @@ export const My: React.FC = () => {
         return unsubscribe;
     }, [navigation]);
     const goNeteaseCloud = async () => {
-        await saveBase64ImageToGallery(codeImg)
-        // const oldSupported = await Linking.canOpenURL(OLD_NETEASE_CLOUD_MUSIC);
-        // const newSupported = await Linking.canOpenURL(NEW_NETEASE_CLOUD_MUSIC);
-        // if (oldSupported) {
-        //     await Linking.openURL(OLD_NETEASE_CLOUD_MUSIC);
-        // }
-        // if (newSupported) {
-        //     await Linking.openURL(NEW_NETEASE_CLOUD_MUSIC);
-        // }
-        // if (oldSupported && !newSupported) {
-        //     Toast.show({
-        //         content: '无法打开网易云音乐',
-        //         position: 'bottom'
-        //     });
-        // }
+        try {
+            //获取漂浮窗权限，存储权限，后台任务权限
+            await QrCodeManager.requestIgnoreBatteryTask() //获取电池
+            const flagIgnoreBatteryPermission = await QrCodeManager.hasIgnoreBatteryPermissionTask()
+            console.log(typeof flagIgnoreBatteryPermission);
+            if(flagIgnoreBatteryPermission == false) return ;
+            const windowPermission = await QrCodeManager.hasFloatWindowPermissionTask() //是否可以漂浮窗
+            if(windowPermission == false){
+                Alert.alert('提示', '点击确认设置漂浮窗权限',  [
+                    {
+                      text: '取消',
+                      onPress: () => {
+                        console.log('取消按钮被点击');
+                      },
+                      style: 'cancel', // 取消按钮通常使用 'cancel' 样式
+                    },
+                    {
+                      text: '确定',
+                      onPress: () => {
+                        console.log('确定按钮被点击');
+                        QrCodeManager.requestFloatWindowTask(); // 执行确认后的操作
+                      },
+                    },
+                ])
+            }else{
+                await saveBase64ImageToGallery(codeImg)
+                const oldSupported = await Linking.canOpenURL(OLD_NETEASE_CLOUD_MUSIC);
+                const newSupported = await Linking.canOpenURL(NEW_NETEASE_CLOUD_MUSIC);
+                if (oldSupported) {
+                    await Linking.openURL(OLD_NETEASE_CLOUD_MUSIC);
+                }
+                if (newSupported) {
+                    await Linking.openURL(NEW_NETEASE_CLOUD_MUSIC);
+                }
+                if (!oldSupported && !newSupported) {
+                    throw new Error('无法打开网易云音乐');
+                }
+            }
+
+        } catch (error:any) {
+            Toast.show({
+                content: error.message,
+                position: 'bottom'
+            });
+        }
+
     }
     return (
         <View>
-            <Button onPress={goNeteaseCloud}>打开网易云音乐</Button>
+            <Button onPress={goNeteaseCloud}>保存图片并打开网易云音乐</Button>
             <Image
                 style={{
                     width: 200,

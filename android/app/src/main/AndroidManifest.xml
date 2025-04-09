@@ -41,4 +41,14 @@
       <service android:name="com.awesomeproject.QrCodeHeadlessJsTaskService" />
       <service android:name="com.awesomeproject.qrcodeWorker.QrCodeService" />
     </application>
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="orpheuswidget"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="orpheus"/>
+        </intent>
+    </queries>
 </manifest>

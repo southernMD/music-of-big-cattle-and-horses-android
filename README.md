@@ -13,6 +13,7 @@ adb tcpip 5555
 adb connect 手机ip:5555
 adb connect 10.76.163.27:5555
 adb connect 100.105.236.73:5555
+adb connect 10.22.48.178:5555
 
 ## 调试面板
 adb shell input keyevent 82 
