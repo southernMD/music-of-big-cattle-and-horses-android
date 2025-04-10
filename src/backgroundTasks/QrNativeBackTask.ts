@@ -1,5 +1,6 @@
 import { qrCheck } from '@/api';
 import { CodeEnum } from '@/constants/network';
+import { saveCredentials } from '@/utils/keychain';
 import { loadString } from '@/utils/storage';
 import { Linking, NativeModules } from 'react-native';
 import BackgroundTimer from 'react-native-background-timer';
@@ -23,7 +24,8 @@ export async function qrCodeNativeBackground(data: any) {
             //已扫描等待认证
         } else if (resCheck.code === CodeEnum.QR_SUCCESS) {
             //登录成功返回
-            console.log('finish');
+            console.log('finish',resCheck.cookie,resCheck.nickname);
+            await saveCredentials('user', resCheck.cookie)
             const res = await QrCodeManager.startBackgroudTask2()
             BackgroundTimer.stopBackgroundTimer()
             return Promise.resolve()

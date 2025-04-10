@@ -29,7 +29,7 @@ export const saveBase64ImageToGallery = async (base64Data: string) => {
         console.log(downloadDest);
         const res = await RNFS.writeFile(downloadDest, Base64Code, 'base64')
         const msg = await NativeModules.QrCode.refreshImg(downloadDest)
-        console.log(msg);
+        return downloadDest
     } catch (error) {
         console.log(error);
         throw new Error('保存图片失败');

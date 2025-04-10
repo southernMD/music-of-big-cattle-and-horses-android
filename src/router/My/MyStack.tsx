@@ -11,6 +11,7 @@ export const MyStack = createNativeStackNavigator<MyStackParamList>({
         headerStyle: {
           backgroundColor: '#f4511e',
         },
+        headerTransparent:true,
         headerTintColor: '#fff',
         headerTitleStyle: {
           fontWeight: 'bold',

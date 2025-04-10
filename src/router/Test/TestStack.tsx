@@ -8,8 +8,9 @@ export const TestStack = createNativeStackNavigator<TestStackParamList>({
     Test: {
       screen: Test,
       options: {
+        presentation: 'transparentModal',
         headerStyle: {
-          backgroundColor: '#f4511e',
+          backgroundColor: 'transparent'
         },
         headerTintColor: '#fff',
         headerTitleStyle: {

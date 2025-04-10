@@ -18,6 +18,7 @@
 		1D971EF50E894FA4BA7F241B /* antoutline.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2AAE77FA957A4AFDA3F3A425 /* antoutline.ttf */; };
 		0963E4A0FE19438BB8A8C91B /* music.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CCBFC77F942941DF84C5635A /* music.mp3 */; };
 		055E867DE61F4CEE8BB59865 /* img.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 7D2E96C7C7D248D98DDAEAA6 /* img.jpg */; };
+		6CA7F44EF59C40A7A44B13DC /* avatar.png in Resources */ = {isa = PBXBuildFile; fileRef = D5FDF07A1FC7445B904D8ACD /* avatar.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,6 +54,7 @@
 		2AAE77FA957A4AFDA3F3A425 /* antoutline.ttf */ = {isa = PBXFileReference; name = "antoutline.ttf"; path = "../node_modules/@ant-design/icons-react-native/fonts/antoutline.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 		CCBFC77F942941DF84C5635A /* music.mp3 */ = {isa = PBXFileReference; name = "music.mp3"; path = "../src/assets/mp3/music.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 		7D2E96C7C7D248D98DDAEAA6 /* img.jpg */ = {isa = PBXFileReference; name = "img.jpg"; path = "../src/assets/imgs/img.jpg"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		D5FDF07A1FC7445B904D8ACD /* avatar.png */ = {isa = PBXFileReference; name = "avatar.png"; path = "../src/assets/imgs/avatar.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -166,6 +168,7 @@
 				2AAE77FA957A4AFDA3F3A425 /* antoutline.ttf */,
 				CCBFC77F942941DF84C5635A /* music.mp3 */,
 				7D2E96C7C7D248D98DDAEAA6 /* img.jpg */,
+				D5FDF07A1FC7445B904D8ACD /* avatar.png */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -270,6 +273,7 @@
 				1D971EF50E894FA4BA7F241B /* antoutline.ttf in Resources */,
 				0963E4A0FE19438BB8A8C91B /* music.mp3 in Resources */,
 				055E867DE61F4CEE8BB59865 /* img.jpg in Resources */,
+				6CA7F44EF59C40A7A44B13DC /* avatar.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

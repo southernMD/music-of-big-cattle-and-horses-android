@@ -5,7 +5,7 @@ import { Button, Icon } from '@ant-design/react-native';
 import { NativeEventEmitter, NativeModules, AppRegistry } from 'react-native';
 import { NativeModulesPlayMusicManager, backgroundPlayMusic } from '@/backgroundTasks/NativeMusicPlayer';
 import Sound from 'react-native-sound';
-import type { RootNavigationParamList, RootStackNavigationProps, RootTabScreenProps } from '@/types/NavigationType'
+import type { RootStackNavigationProps } from '@/types/NavigationType'
 export const Home: React.FC = () => {
   const [headlessTaskId, setHeadlessTaskId] = useState(0);
   // fetch('https://international.v1.hitokoto.cn').then((res) => res.json()).then((data) => { console.log(data) })
@@ -110,7 +110,7 @@ export const Home: React.FC = () => {
           <Button style={styles.buttonStyle} onPress={() => handleOnlinePlayMusic('play')}>
             <Text>使用web播放音乐</Text>
           </Button>
-          <Button style={styles.buttonStyle} onPress={() => navigation.navigate('TestTab')}>
+          <Button style={styles.buttonStyle} onPress={() => navigation.navigate("Main")}>
             <Text>去Test页面</Text>
           </Button>
         </View>
