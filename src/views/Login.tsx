@@ -1,6 +1,7 @@
-import { qrCheck, qrImage, qrKey } from "@/api";
+import { qrCheck, qrImage, qrKey, quitLogin } from "@/api";
 import { OLD_NETEASE_CLOUD_MUSIC, NEW_NETEASE_CLOUD_MUSIC } from "@/constants/link";
 import { CodeEnum } from "@/constants/network";
+import { useBasicApi } from "@/store";
 import { RootStackNavigationProps } from "@/types/NavigationType";
 import { deleteFile } from "@/utils/deleteFile";
 import { deleteCredentials, getCredentials, saveCredentials } from "@/utils/keychain";
@@ -9,8 +10,9 @@ import { clear, loadString, remove, saveString } from "@/utils/storage";
 import { ActivityIndicator, Button, Icon, Provider, Toast } from "@ant-design/react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, AppRegistry, AppState, DeviceEventEmitter, Image, Linking, NativeModules, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, AppRegistry, AppState, BackHandler, DeviceEventEmitter, Image, Linking, Modal, NativeModules, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import BackgroundTimer from 'react-native-background-timer';
+import { useSnapshot } from "valtio";
 //orpheuswidget://
 //orpheus://
 export const Login: React.FC = () => {
@@ -22,6 +24,8 @@ export const Login: React.FC = () => {
     const QrCodeManager = NativeModules.QrCode;
     const [flag, setFlag] = useState<boolean>(false)
     const [path, setPath] = useState<string>('')
+
+    const { account, profile, reqLogin } = useSnapshot(useBasicApi)
     const qrCodeHandle = async () => {
         const controller = new AbortController();
         const unikey = (await loadString('unikey'))!
@@ -103,21 +107,33 @@ export const Login: React.FC = () => {
     })
     useEffect(() => {
         const unsubscribe = navigation.addListener('blur', () => {
+            console.log('离开当前页面');
             setCodeImg('')
             clearInterval(timer!);
             remove('unikey')
+            setFlag(false)
         });
         return unsubscribe;
     }, [navigation, timer]);
 
     useEffect(() => {
-        if(flag && path){
-            console.log(flag,path,"球球你阻止我");
-            deleteFile(path)
-            setFlag(false)
-            setPath('')
+        if (flag) {
+            setIsLoading(true);
+            console.log(flag, path, "球球你阻止我");
+            if(path)deleteFile(path);
+            setFlag(false);
+            setPath('');
+            (async () => {
+                const cookie = await getCredentials()
+                if (cookie) {
+                    await reqLogin(cookie.password)
+                    console.log(account,profile,useBasicApi.account,useBasicApi.profile);
+                    navigation.navigate('Main', { screen: 'HomeTab' })
+                }
+                setIsLoading(false)
+            })();
         }
-    }, [flag,path]);
+    }, [flag, path]);
     const goNeteaseCloud = async () => {
         try {
             if (codeImg.length == 0) throw new Error('二维码加载中');
@@ -177,6 +193,26 @@ export const Login: React.FC = () => {
         setMsg('二维码未扫描')
         timer = setInterval(qrCodeHandle, 1500)
     }
+    const [isLoading, setIsLoading] = useState(false); // 新增加载状态
+    useFocusEffect(
+        useCallback(() => {
+            const backHandler = BackHandler.addEventListener(
+                'hardwareBackPress',
+                () => isLoading // 如果正在加载，拦截返回键
+            );
+            return () => backHandler.remove();
+        }, [isLoading])
+    );
+    // 拦截导航返回（包括侧滑和编程式返回）
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+            if (isLoading) {
+                e.preventDefault(); // 阻止导航离开
+                return;
+            }
+        });
+        return unsubscribe;
+    }, [navigation, isLoading]);
     return (
         <View style={styles.container}>
 
@@ -213,6 +249,12 @@ export const Login: React.FC = () => {
             </Button>
 
             <Text>{userMsg}</Text>
+
+            <Modal visible={isLoading} transparent animationType="fade">
+                <View style={styles.loadingOverlay}>
+                    <ActivityIndicator size="large" color="#f4511e" />
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -260,6 +302,12 @@ const styles = StyleSheet.create({
         width: 50,
         height: 50,
         borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
     },

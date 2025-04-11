@@ -47,6 +47,7 @@ export async function customFetch(url: string, config: RequestInit = {}, jsonFla
         // 应用全局请求拦截器
         const modifiedConfig = requestInterceptor({
             ...config,
+            credentials: 'include',
             signal: controller.signal, // 将 AbortSignal 添加到配置中
         });
 

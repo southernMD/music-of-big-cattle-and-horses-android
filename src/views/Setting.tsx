@@ -3,13 +3,33 @@ import { Section } from '@/components/Setting/Section';
 import { Item } from '@/components/Setting/Item';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackNavigationProps } from '@/types/NavigationType';
+import { useSnapshot } from 'valtio';
+import { useBasicApi } from '@/store';
+import { Toast } from '@ant-design/react-native';
 
-export const Setting = ()=> {
+export const Setting = () => {
+  const { reqQuitLogin } = useSnapshot(useBasicApi);
+
   const handlePress = (setting: string) => {
     console.log(`Pressed: ${setting}`);
   };
 
   const navigation = useNavigation<RootStackNavigationProps>();
+  const quit = async () => {
+    const flag = await reqQuitLogin()
+    if (flag) {
+      navigation.navigate('Main', { screen: 'HomeTab' })
+      Toast.show({
+        content: '退出成功',
+        position: 'bottom'
+      });
+    } else {
+      Toast.show({
+        content: '退出失败',
+        position: 'bottom'
+      });
+    }
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -81,26 +101,30 @@ export const Setting = ()=> {
           onPress={() => handlePress('跨端续播')}
         />
         <Item
-            label="更多播放下载设置"
-            rightElement="chevron"
-            onPress={() => handlePress('更多播放下载设置')}
+          label="更多播放下载设置"
+          rightElement="chevron"
+          onPress={() => handlePress('更多播放下载设置')}
         />
       </Section>
 
       <Section
         title='账号设置'
       >
-        <Item 
+        {useBasicApi.account ? 
+        <>
+          <Item
             label='切换用户'
-            onPress={() => navigation.navigate('Login')}
-        />
-        <Item
+            onPress={() => navigation.navigate('Login')} />
+
+          <Item
             label='退出登录'
-            onPress={() => handlePress('退出登录')}
-            labelStyle={{
-                color: 'red'
-            }}
-        />
+            onPress={() => quit()}
+            labelStyle={{color: 'red'}} />
+        </> :
+          <Item
+            label='登录'
+            onPress={() => navigation.navigate('Login')} />
+        }
 
       </Section>
     </ScrollView>

@@ -1,6 +1,6 @@
-import { qrCheck } from '@/api';
+import { qrCheck, quitLogin } from '@/api';
 import { CodeEnum } from '@/constants/network';
-import { saveCredentials } from '@/utils/keychain';
+import { getCredentials, saveCredentials } from '@/utils/keychain';
 import { loadString } from '@/utils/storage';
 import { Linking, NativeModules } from 'react-native';
 import BackgroundTimer from 'react-native-background-timer';
