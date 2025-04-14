@@ -192,9 +192,9 @@ public class QrCode extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void startBackgroudTask(Promise promise) {
-        if(timer!=null) {
+        if(timer != null) {
             timer.cancel();
-            timer=null;
+            timer = null;
         }
 
         timer = new Timer();
@@ -203,39 +203,54 @@ public class QrCode extends ReactContextBaseJavaModule {
             public void run() {
                 try {
                     if(!isAppOnForeground(reactContext)) {
+                        // 应用在后台，执行后台任务
                         WritableMap params = Arguments.createMap();
                         params.putString("msg", "app已经在后台了，准备启动BackgroundPostionWorker");
                         sendEvent(reactContext, "backgroundTask", params);
 
-
-                        workRequest = new OneTimeWorkRequest.Builder(QrCodeWorker.class).setConstraints(
-                                new Constraints.Builder()
-                                        .setRequiresCharging(false) // 不需要设备充电
-                                        .setRequiresBatteryNotLow(false) // true电池电量不低
-                                        .build()
-                        )
-                        .build();
+                        workRequest = new OneTimeWorkRequest.Builder(QrCodeWorker.class)
+                                .setConstraints(
+                                        new Constraints.Builder()
+                                                .setRequiresCharging(false)
+                                                .setRequiresBatteryNotLow(false)
+                                                .build()
+                                )
+                                .build();
                         WorkManager.getInstance(reactContext).enqueue(workRequest);
+
+                        // 成功启动后取消定时器
+                        timer.cancel();
+                        timer = null;
 
                         WritableMap params2 = Arguments.createMap();
                         params2.putString("msg", "Qrcode started");
-                        promise.resolve(params2);
-                    }else{
+                        promise.resolve("Qrcode started");
+                    } else {
+                        // 应用在前台，3秒后重试
                         WritableMap params = Arguments.createMap();
-                        params.putString("msg", "app并不在后台");
+                        params.putString("msg", "app在前台，3秒后重试检查");
                         sendEvent(reactContext, "backgroundTask", params);
-                        promise.resolve(params);
+
+                        // 不需要额外操作，定时器会自动在3秒后再次执行
                     }
                 } catch (Exception e) {
+                    WritableMap params = Arguments.createMap();
+                    params.putString("msg", e.toString());
+                    sendEvent(reactContext, "backgroundTask", params);
                     e.printStackTrace();
                     promise.reject(TAGERROR, e);
+
+                    // 发生错误也取消定时器
+                    if(timer != null) {
+                        timer.cancel();
+                        timer = null;
+                    }
                 }
             }
         };
-        // 3s后执行1次
-        timer.schedule(task, 3000);
+        // 每3秒执行一次检查
+        timer.schedule(task, 0, 3000); // 立即开始，然后每3秒重复
     }
-
     @ReactMethod
     public void stopBackgroudTask(Promise promise) {
         if(timer!=null) {
