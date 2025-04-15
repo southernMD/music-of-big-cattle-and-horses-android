@@ -27,12 +27,17 @@ export type MyStackParamList = {
 }
 
 export type SettingStackParamList = {
-    Setting: undefined;
+    SettingHome: undefined;
+    Login:undefined;
 }
 
-export type LoginStackParamList = {
-    Login: undefined;
-}
+export type UserCenterStackParamList = {
+    UserCenterHome:{
+        uid:number,
+        avatarUrl:string,
+        nickname:string
+    }
+};
 
 
 // 定义 Bottom Tab Navigator 的参数类型
@@ -47,7 +52,10 @@ export type RootTabParamList = {
 export type RootStackParamList = {
     Main: NavigatorScreenParams<RootTabParamList>; // 主界面是 Tab Navigator
     Setting: NavigatorScreenParams<SettingStackParamList>; // 设置页面的 Stack
-    Login:NavigatorScreenParams<LoginStackParamList>
+    UserCenter:{
+        screen: keyof UserCenterStackParamList; // 嵌套导航的屏幕名称
+        params: UserCenterStackParamList['UserCenterHome']; // 对应子屏幕的参数类型
+    };
 };
 
 // 全局导航属性类型

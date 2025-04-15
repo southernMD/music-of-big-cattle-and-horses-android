@@ -7,7 +7,7 @@ import { useSnapshot } from 'valtio';
 import { useBasicApi } from '@/store';
 import { Toast } from '@ant-design/react-native';
 
-export const Setting = () => {
+export const SettingHome = () => {
   const { reqQuitLogin } = useSnapshot(useBasicApi);
 
   const handlePress = (setting: string) => {
@@ -114,7 +114,7 @@ export const Setting = () => {
         <>
           <Item
             label='切换用户'
-            onPress={() => navigation.navigate('Login')} />
+            onPress={() => navigation.navigate('Setting',{screen:'Login'})} />
 
           <Item
             label='退出登录'
@@ -123,7 +123,7 @@ export const Setting = () => {
         </> :
           <Item
             label='登录'
-            onPress={() => navigation.navigate('Login')} />
+            onPress={() => navigation.navigate('Setting',{screen:'Login'})} />
         }
 
       </Section>

@@ -2,10 +2,13 @@ import { RootStackNavigationProps } from "@/types/NavigationType";
 import { Icon } from "@ant-design/react-native";
 import { useNavigation } from "@react-navigation/native";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
+import { useBasicApi } from '@/store';
+import { useSnapshot } from "valtio";
+import { convertHttpToHttps } from "@/utils/fixHttp";
 
 export const CustomHeaderTitle = ({ title }: { title: string }) => {
-    const navigation = useNavigation<RootStackNavigationProps>();
-  
+  const navigation = useNavigation<RootStackNavigationProps>();
+  const { profile } = useSnapshot(useBasicApi)
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
@@ -19,10 +22,19 @@ export const CustomHeaderTitle = ({ title }: { title: string }) => {
           <Icon name="setting" size={20} color="#fff" />
         </Pressable>
 
-        <Pressable onPress={() => console.log("Avatar clicked")} style={styles.iconPressable}>
+        <Pressable onPress={() =>
+          navigation.navigate('UserCenter', {
+            screen: 'UserCenterHome',
+            params: { 
+              uid: profile?.userId!,
+              avatarUrl: convertHttpToHttps(profile?.avatarUrl!),
+              nickname: profile?.nickname!
+             }
+          })} 
+          style={styles.iconPressable}>
           <Image
             source={{
-              uri: 'avatar', // 替换为实际头像 URL
+              uri: profile ? convertHttpToHttps(profile.avatarUrl) : 'avatar', // 替换为实际头像 URL
             }}
             style={styles.avatar}
           />

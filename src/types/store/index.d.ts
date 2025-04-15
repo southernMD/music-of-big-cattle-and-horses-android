@@ -5,3 +5,6 @@ export type BaseApiType = {
     reqLogin:(cookie:string) => Promise<any>
     reqQuitLogin:()=>Promise<boolean>
 }
+export type UserCenterType = {
+    scrollY:number
+}

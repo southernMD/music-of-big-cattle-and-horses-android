@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 public class QrCode extends ReactContextBaseJavaModule {
     private static ReactApplicationContext reactContext;
-    private Timer timer = null;//计时器
+    private Timer timer = null;// 计时器
     private TimerTask task = null;
     // private LocationManager locationManager;
     // private LocationListener locationListener;
@@ -60,7 +60,7 @@ public class QrCode extends ReactContextBaseJavaModule {
 
     /**
      * 忽略电池优化防止杀死后台任务
-     * */
+     */
     @SuppressLint("ObsoleteSdkInt")
     public static void requestIgnoreBatteryOptimizations(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -68,7 +68,8 @@ public class QrCode extends ReactContextBaseJavaModule {
             PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
 
             if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-                @SuppressLint("BatteryLife") Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                @SuppressLint("BatteryLife")
+                Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 intent.setData(Uri.parse("package:" + packageName));
                 System.out.println("请求用户允许应用忽略电池优化");
@@ -76,6 +77,7 @@ public class QrCode extends ReactContextBaseJavaModule {
             }
         }
     }
+
     /**
      * 检查应用是否具有漂浮窗权限
      *
@@ -85,6 +87,7 @@ public class QrCode extends ReactContextBaseJavaModule {
     public static boolean hasFloatWindowPermission(Context context) {
         return Settings.canDrawOverlays(context);
     }
+
     /**
      * 检查应用是否能始终在后台运行
      *
@@ -97,7 +100,7 @@ public class QrCode extends ReactContextBaseJavaModule {
             String packageName = context.getPackageName();
             PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
             return pm.isIgnoringBatteryOptimizations(packageName);
-        }else{
+        } else {
             return true;
         }
     }
@@ -120,10 +123,10 @@ public class QrCode extends ReactContextBaseJavaModule {
     public static void isRunningForegroundToApp1(Context context, final Class Class) {
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         List<ActivityManager.RunningTaskInfo> taskInfoList = activityManager.getRunningTasks(20);
-        /**枚举进程*/
+        /** 枚举进程 */
 
         for (ActivityManager.RunningTaskInfo taskInfo : taskInfoList) {
-            //*找到本应用的 task，并将它切换到前台
+            // *找到本应用的 task，并将它切换到前台
             if (taskInfo.baseActivity.getPackageName().equals(context.getPackageName())) {
                 activityManager.moveTaskToFront(taskInfo.id, ActivityManager.MOVE_TASK_WITH_HOME);
                 Intent intent = new Intent(context, Class);
@@ -136,11 +139,11 @@ public class QrCode extends ReactContextBaseJavaModule {
         }
     }
 
-
     @ReactMethod
     public void addListener(String eventName) {
         // Set up any upstream listeners or background tasks as necessary
     }
+
     @ReactMethod
     public void removeListeners(Integer count) {
         // Remove upstream listeners, stop unnecessary background tasks
@@ -148,19 +151,17 @@ public class QrCode extends ReactContextBaseJavaModule {
 
     private boolean isAppOnForeground(Context context) {
         /**
-         我们需要先检查应用当前是否在前台运行，否则应用会崩溃。
-         http://stackoverflow.com/questions/8489993/check-android-application-is-in-foreground-or-not
+         * 我们需要先检查应用当前是否在前台运行，否则应用会崩溃。
+         * http://stackoverflow.com/questions/8489993/check-android-application-is-in-foreground-or-not
          **/
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        List<ActivityManager.RunningAppProcessInfo> appProcesses =
-                activityManager.getRunningAppProcesses();
+        List<ActivityManager.RunningAppProcessInfo> appProcesses = activityManager.getRunningAppProcesses();
         if (appProcesses == null) {
             return false;
         }
         final String packageName = context.getPackageName();
         for (ActivityManager.RunningAppProcessInfo appProcess : appProcesses) {
-            if (appProcess.importance ==
-                    ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND &&
+            if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND &&
                     appProcess.processName.equals(packageName)) {
                 return true;
             }
@@ -168,22 +169,21 @@ public class QrCode extends ReactContextBaseJavaModule {
         return false;
     }
 
-
     @ReactMethod
     public void refreshImg(String filePath, Promise promise) {
         MediaScannerConnection.scanFile(
                 reactContext,
-                new String[]{filePath},
-                new String[]{"img/png"},
+                new String[] { filePath },
+                new String[] { "img/png" },
                 (path, uri) -> {
                     if (uri != null) {
                         promise.resolve("文件已添加到媒体库: " + uri.toString());
                     } else {
                         promise.resolve("文件添加到媒体库失败");
                     }
-                }
-        );
+                });
     }
+
     @ReactMethod
     public void startBackgroudTask2(Promise promise) {
         isRunningForegroundToApp1(reactContext, MainActivity.class);
@@ -192,17 +192,19 @@ public class QrCode extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void startBackgroudTask(Promise promise) {
-        if(timer != null) {
+        if (timer != null) {
             timer.cancel();
             timer = null;
         }
-
+        WritableMap params = Arguments.createMap();
+        params.putString("msg", "进入startBackgroudTask函数");
+        sendEvent(reactContext, "backgroundTask", params);
         timer = new Timer();
         task = new TimerTask() {
             @Override
             public void run() {
                 try {
-                    if(!isAppOnForeground(reactContext)) {
+                    if (!isAppOnForeground(reactContext)) {
                         // 应用在后台，执行后台任务
                         WritableMap params = Arguments.createMap();
                         params.putString("msg", "app已经在后台了，准备启动BackgroundPostionWorker");
@@ -213,8 +215,7 @@ public class QrCode extends ReactContextBaseJavaModule {
                                         new Constraints.Builder()
                                                 .setRequiresCharging(false)
                                                 .setRequiresBatteryNotLow(false)
-                                                .build()
-                                )
+                                                .build())
                                 .build();
                         WorkManager.getInstance(reactContext).enqueue(workRequest);
 
@@ -241,7 +242,7 @@ public class QrCode extends ReactContextBaseJavaModule {
                     promise.reject(TAGERROR, e);
 
                     // 发生错误也取消定时器
-                    if(timer != null) {
+                    if (timer != null) {
                         timer.cancel();
                         timer = null;
                     }
@@ -251,20 +252,21 @@ public class QrCode extends ReactContextBaseJavaModule {
         // 每3秒执行一次检查
         timer.schedule(task, 0, 3000); // 立即开始，然后每3秒重复
     }
+
     @ReactMethod
     public void stopBackgroudTask(Promise promise) {
-        if(timer!=null) {
+        if (timer != null) {
             timer.cancel();
-            timer=null;
+            timer = null;
         }
 
         // if(locationManager != null && locationListener != null) {
-        //   locationManager.removeUpdates(locationListener);
+        // locationManager.removeUpdates(locationListener);
         // }
         WritableMap params = Arguments.createMap();
         WorkManager.getInstance(reactContext).cancelWorkById(workRequest.getId());
         params.putString("msg", "BackgroundPostionWorker stop successed");
-        promise.resolve(params);
+        promise.resolve("BackgroundPostionWorker stop successed");
     }
 
     @ReactMethod
@@ -274,18 +276,18 @@ public class QrCode extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void requestFloatWindowTask(Promise promise){
+    public void requestFloatWindowTask(Promise promise) {
         requestFloatWindowPermission(reactContext);
         promise.resolve("");
     }
 
     @ReactMethod
-    public void hasFloatWindowPermissionTask(Promise promise){
+    public void hasFloatWindowPermissionTask(Promise promise) {
         promise.resolve(hasFloatWindowPermission(reactContext));
     }
 
     @ReactMethod
-    public void hasIgnoreBatteryPermissionTask(Promise promise){
+    public void hasIgnoreBatteryPermissionTask(Promise promise) {
         promise.resolve(hasIgnoreBatteryOptimizations(reactContext));
     }
 }

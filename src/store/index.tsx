@@ -1,6 +1,6 @@
 import { proxy } from 'valtio';
 import { Login, getDetail, quitLogin } from '@/api'; // 假设这是你的 API 方法
-import { BaseApiType } from '@/types/store';
+import { BaseApiType, UserCenterType } from '@/types/store';
 import { CodeEnum } from '@/constants/network';
 import { deleteCredentials } from '@/utils/keychain';
 
@@ -40,3 +40,7 @@ export const useBasicApi = proxy<BaseApiType>({
     }
     
 });
+
+export const useUserCenter = proxy<UserCenterType>({
+    scrollY:0
+})

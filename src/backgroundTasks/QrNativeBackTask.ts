@@ -7,10 +7,11 @@ import BackgroundTimer from 'react-native-background-timer';
 const QrCodeManager = NativeModules.QrCode;
 export async function qrCodeNativeBackground(data: any) {
     BackgroundTimer.runBackgroundTimer(async () => {
+        console.log('');
         let unikey =  await loadString('unikey')
         const controller = new AbortController();
         const resCheck = await qrCheck(unikey ?? '', controller)
-        console.log(unikey,resCheck);
+        console.log(unikey,resCheck,"我是后台");
         if (resCheck.code == CodeEnum.QR_OUT_LIMIT) {
             //过期
             console.log('timeout');

@@ -14,6 +14,8 @@ adb connect 手机ip:5555
 adb connect 10.76.163.27:5555
 adb connect 100.105.236.73:5555
 adb connect 10.22.48.178:5555
+adb connect 10.0.5.162:5555
+adb connect 10.156.57.29:5555
 
 ## 调试面板
 adb shell input keyevent 82 
@@ -25,7 +27,8 @@ adb reverse tcp:9090 tcp:9090
 ## 打包
 cd android && ./gradlew assembleRelease
 生成的 APK 文件位于android/app/build/outputs/apk/release/app-release.apk
-
+安装 adb install app/build/outputs/apk/release/app-release.apk
+ 
 ## 策划
 # 底部bar
     1. home 首页 最近播放歌单 日推 歌单推荐 电台推荐

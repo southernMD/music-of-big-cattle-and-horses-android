@@ -7,8 +7,9 @@ import { deleteFile } from "@/utils/deleteFile";
 import { deleteCredentials, getCredentials, saveCredentials } from "@/utils/keychain";
 import { saveBase64ImageToGallery } from "@/utils/saveFile";
 import { clear, loadString, remove, saveString } from "@/utils/storage";
+import { setIntervalWithSleep } from "@/utils/timer";
 import { ActivityIndicator, Button, Icon, Provider, Toast } from "@ant-design/react-native";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { CommonActions, useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, AppRegistry, AppState, BackHandler, DeviceEventEmitter, Image, Linking, Modal, NativeModules, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import BackgroundTimer from 'react-native-background-timer';
@@ -18,41 +19,52 @@ import { useSnapshot } from "valtio";
 export const Login: React.FC = () => {
     const [codeImg, setCodeImg] = useState<string>('')
     const navigation = useNavigation<RootStackNavigationProps>()
-    let timer: NodeJS.Timeout | null = null;
+    let timer: any | null = null;
     const [msg, setMsg] = useState<string>('二维码加载中')
     const [userMsg, setUserMsg] = useState<string>('')
     const QrCodeManager = NativeModules.QrCode;
     const [flag, setFlag] = useState<boolean>(false)
     const [path, setPath] = useState<string>('')
+    const [timeOut, setTimeOut] = useState<boolean>(false)
+    let cnt = 0
+    // const [unikey , setUnikey] = useState<string>('')
 
     const { account, profile, reqLogin } = useSnapshot(useBasicApi)
     const qrCodeHandle = async () => {
         const controller = new AbortController();
         const unikey = (await loadString('unikey'))!
         const resCheck = await qrCheck(unikey, controller)
-        await saveString('unikey', unikey)
+        console.log(resCheck, unikey,"我是前台任务");
+        cnt++
+        // setMsg('二维码已失效' + unikey + cnt + `|${timer}|`)
+        // setTimeOut(true)
+        // timer.clear()
+        // return
         if (resCheck.code == CodeEnum.QR_OUT_LIMIT) { //过期
-            clearInterval(timer!);
+            timer?.clear();
             remove('unikey')
             const userMsg = await getCredentials()
             if (userMsg) {
-                setMsg('登录成功')
+                setMsg('登录成功' + unikey + cnt + `|${timer}|`)
                 setUserMsg(userMsg.password)
             }
-            else setMsg('二维码已失效')
+            else {
+                setMsg('二维码已失效' + unikey + cnt + `|${timer}|`)
+                setTimeOut(true)
+            }
             setFlag(true)
         } else if (resCheck.code == CodeEnum.QR_WAIT_SCAN) {
             console.log('二维码未扫描');
-            setMsg('二维码未扫描')
+            setMsg('二维码未扫描' + unikey + cnt + `|${timer}|`)
         } else if (resCheck.code == CodeEnum.QR_WAIT_CONFIRMATION) {
             console.log('二维码等待认证');
-            setMsg('二维码等待认证')
+            setMsg('二维码等待认证' + unikey + cnt + `|${timer}|`)
         } else if (resCheck.code === CodeEnum.QR_SUCCESS) {
             controller.abort();
-            clearInterval(timer!);
+            timer.clear();
             await saveCredentials('user', resCheck.cookie);
             setUserMsg(resCheck.cookie)
-            setMsg('登录成功')
+            setMsg('登录成功' + unikey + cnt + `|${timer}|`)
             setFlag(true)
         }
     }
@@ -65,13 +77,15 @@ export const Login: React.FC = () => {
                 await saveString('unikey', res.data.unikey)
                 const imgRes = await qrImage(res.data.unikey)
                 setCodeImg(imgRes.data.qrimg)
-                setMsg('二维码未扫描')
-                timer = setInterval(qrCodeHandle, 1500)
+                setMsg('二维码未扫描' + res.data.unikey)
+                timer = setIntervalWithSleep(qrCodeHandle, 1500)
             }
             getCodeImg()
 
             return () => {
-                clearInterval(timer!);
+                console.log('timer', timer);
+
+                timer?.clear();
             };
         }, [])
     );
@@ -79,15 +93,17 @@ export const Login: React.FC = () => {
         useCallback(() => {
             const handleAppStateChange = async (nextAppState: string) => {
                 if (nextAppState === "background" || nextAppState === "inactive") {
-                    console.log("应用进入最小化或后台");
+                    console.log("应用进入最小化或后台", nextAppState,timer);
                     // 在这里执行进入最小化后的逻辑
-                    clearInterval(timer!);
-                    await QrCodeManager.startBackgroudTask()
+                    timer?.clear();
+                    const res = await QrCodeManager.startBackgroudTask()
+                    console.log(res, "我是res");
+
                 } else if (nextAppState === "active") {
                     console.log("应用回到前台");
                     BackgroundTimer.stopBackgroundTimer()
-                    timer = setInterval(qrCodeHandle, 1500)
                     await QrCodeManager.stopBackgroudTask()
+                    timer = setIntervalWithSleep(qrCodeHandle, 1500)
                     // 在这里执行回到前台后的逻辑
                 }
             };
@@ -97,21 +113,30 @@ export const Login: React.FC = () => {
 
             // 清理监听
             return () => {
+                QrCodeManager.stopBackgroudTask()
                 subscription.remove();
             };
-        }, [])
+        }, [timer])
     );
-    DeviceEventEmitter.addListener('backgroundTask', (event) => {
-        console.log(event.msg, 6);
-        console.log(event, 7);
-    })
     useEffect(() => {
-        const unsubscribe = navigation.addListener('blur', () => {
+        const eventListener = DeviceEventEmitter.addListener('backgroundTask', (event) => {
+            console.log(event.msg, 6);
+            console.log(event, 7);
+        });
+
+        return () => {
+            eventListener.remove(); // 在组件卸载时移除监听器
+        };
+    }, []);
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('blur', async () => {
             console.log('离开当前页面');
             setCodeImg('')
-            clearInterval(timer!);
+            timer?.clear();
             remove('unikey')
             setFlag(false)
+            await QrCodeManager.stopBackgroudTask()
+            BackgroundTimer.stopBackgroundTimer()
         });
         return unsubscribe;
     }, [navigation, timer]);
@@ -120,15 +145,25 @@ export const Login: React.FC = () => {
         if (flag) {
             setIsLoading(true);
             console.log(flag, path, "球球你阻止我");
-            if(path)deleteFile(path);
+            if (path) deleteFile(path);
             setFlag(false);
             setPath('');
             (async () => {
                 const cookie = await getCredentials()
                 if (cookie) {
                     await reqLogin(cookie.password)
-                    console.log(account,profile,useBasicApi.account,useBasicApi.profile);
-                    navigation.navigate('Main', { screen: 'HomeTab' })
+                    console.log(account, profile, useBasicApi.account, useBasicApi.profile);
+                    setIsLoading(false)
+                    queueMicrotask(() => {
+                        navigation.dispatch(
+                            CommonActions.reset({
+                                index: 0,
+                                routes: [
+                                    { name: 'Main', params: { screen: 'HomeTab' } },
+                                ],
+                            })
+                        );
+                    })
                 }
                 setIsLoading(false)
             })();
@@ -138,9 +173,11 @@ export const Login: React.FC = () => {
         try {
             if (codeImg.length == 0) throw new Error('二维码加载中');
             //获取漂浮窗权限，存储权限，后台任务权限
-            await QrCodeManager.requestIgnoreBatteryTask() //获取电池
-            const flagIgnoreBatteryPermission = await QrCodeManager.hasIgnoreBatteryPermissionTask()
-            if (flagIgnoreBatteryPermission === false) return;
+            while (true) {
+                const flagIgnoreBatteryPermission = await QrCodeManager.hasIgnoreBatteryPermissionTask()
+                if (flagIgnoreBatteryPermission === false) await QrCodeManager.requestIgnoreBatteryTask() //获取电池
+                else break
+            }
             const windowPermission = await QrCodeManager.hasFloatWindowPermissionTask() //是否可以漂浮窗
             if (windowPermission === false) {
                 Alert.alert('提示', '点击确认设置漂浮窗权限', [
@@ -180,18 +217,19 @@ export const Login: React.FC = () => {
                 position: 'bottom'
             });
         }
-
     }
 
     const handleRefresh = async () => {
-        clearInterval(timer!)
+        timer?.clear()
+        setTimeOut(false)
         setCodeImg('')
         const res = await qrKey()
         await saveString('unikey', res.data.unikey)
         const imgRes = await qrImage(res.data.unikey)
         setCodeImg(imgRes.data.qrimg)
         setMsg('二维码未扫描')
-        timer = setInterval(qrCodeHandle, 1500)
+        timer = setIntervalWithSleep(qrCodeHandle, 1500)
+
     }
     const [isLoading, setIsLoading] = useState(false); // 新增加载状态
     useFocusEffect(
@@ -223,7 +261,7 @@ export const Login: React.FC = () => {
                             source={{ uri: codeImg }}
                             style={styles.image}
                         />
-                        {msg === '二维码已失效' && (
+                        {timeOut && (
                             <View style={styles.overlay}>
                                 <TouchableOpacity
                                     style={styles.refreshButton}
@@ -244,10 +282,9 @@ export const Login: React.FC = () => {
 
             <Text style={styles.msg}>{msg}</Text>
 
-            <Button onPress={goNeteaseCloud} style={styles.button} disabled={msg === '二维码已失效'}>
+            <Button onPress={goNeteaseCloud} style={styles.button} disabled={timeOut}>
                 保存图片并打开网易云音乐
             </Button>
-
             <Text>{userMsg}</Text>
 
             <Modal visible={isLoading} transparent animationType="fade">

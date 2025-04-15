@@ -6,7 +6,7 @@ import { testTabConfig } from "./Test/TestTap";
 import { myTabConfig } from "./My/MyTap";
 import { SettingStack, } from "./Setting/SettingStack";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { LoginStack } from "./Login/LoginStack";
+import { UserCenterStack } from "./UserCenter/UserCenterStack";
 
 const Tab = createBottomTabNavigator<RootTabParamList>({
   screenOptions: {
@@ -28,7 +28,7 @@ const RootStack = createNativeStackNavigator<RootStackParamList>({
       screen: Tab,
     },
     Setting: SettingStack,
-    Login: LoginStack,
+    UserCenter: UserCenterStack,
   },
   screenOptions: {
     headerShown: false, // 隐藏 Tab 页的默认顶部栏（因为每个 Stack 有自己的头部）
