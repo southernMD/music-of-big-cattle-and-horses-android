@@ -10,6 +10,7 @@ import { Provider } from '@ant-design/react-native';
 import { getCredentials } from '@/utils/keychain';
 import { useSnapshot } from 'valtio';
 import { useBasicApi } from '@/store';
+import { FullScreenImageProvider } from '@/utils/imgFullPreview';
 
 if (__DEV__) {
   require("./ReactotronConfig");
@@ -25,12 +26,15 @@ function App(): React.JSX.Element {
   }, []);
 
   return (
-    <Provider>
-      <Navigation linking={{
-        enabled: 'auto',
-        prefixes: ['mychat://'],
-      }} />
-    </Provider>
+    <FullScreenImageProvider>
+      <Provider>
+        <Navigation linking={{
+          enabled: 'auto',
+          prefixes: ['mychat://'],
+        }} />
+      </Provider>
+    </FullScreenImageProvider>
+
   );
 }
 
