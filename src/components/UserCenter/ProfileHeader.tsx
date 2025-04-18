@@ -1,6 +1,6 @@
 import { View, Text, Image, StyleSheet, TouchableOpacity, ImageBackground, Pressable } from 'react-native';
 import { Shield, MapPin } from 'lucide-react-native';
-import { useFullScreenImage } from '@/utils/imgFullPreview';
+import { useFullScreenImage } from '@/context/imgFullPreviewContext';
 
 export function ProfileHeader() {
     const { showFullScreenImage } = useFullScreenImage();

@@ -23,7 +23,7 @@ const DynamicHeaderBackground = () => {
   return (
     <View style={{
       flex: 1,
-      backgroundColor: `rgba(244,81,30,${opacity})`
+      backgroundColor: `rgba(28, 28, 30,${opacity})`
     }} />
   );
 };

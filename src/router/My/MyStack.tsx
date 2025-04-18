@@ -1,23 +1,33 @@
-import {  MyStackParamList } from "@/types/NavigationType";
+import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { CustomHeaderTitle } from "./MyHeader";
 import { My } from "@/views/My";
+import { MyStackParamList } from "@/types/NavigationType";
+import { CustomHeaderTitle } from "./MyHeader";
+import { useTheme } from "@/hooks/useTheme";
 
-export const MyStack = createNativeStackNavigator<MyStackParamList>({
-  screens: {
-    My: {
-      screen: My,
-      options: {
-        headerStyle: {
-          backgroundColor: '#f4511e',
-        },
-        headerTransparent:true,
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-        headerTitle: () => <CustomHeaderTitle title="我的" />,
-      },
-    },
-  },
-});
+const Stack = createNativeStackNavigator<MyStackParamList>();
+
+export const MyStack = () => {
+  const { box, typography } = useTheme();
+
+
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="My"
+        component={My}
+        options={{
+          headerStyle: {
+            backgroundColor: box.background.deep,
+          },
+          headerTransparent: true,
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+          headerTitle: () => <CustomHeaderTitle title="我的" />,
+        }}
+      />
+    </Stack.Navigator>
+  );
+};

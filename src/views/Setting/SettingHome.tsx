@@ -33,6 +33,22 @@ export const SettingHome = () => {
 
   return (
     <ScrollView style={styles.container}>
+      <Section title="主题">
+        <Item
+          label="使用3G/4G/5G网络播放"
+          rightElement="switch"
+          switchValue={true}
+          onSwitchChange={(value) => console.log('Network playback:', value)}
+          onPress={() => handlePress('Network playback')}
+        />
+        <Item
+          label="使用3G/4G/5G网络下载"
+          rightElement="switch"
+          switchValue={false}
+          onSwitchChange={(value) => console.log('Network download:', value)}
+          onPress={() => handlePress('Network download')}
+        />
+      </Section>
       <Section title="插放和下载">
         <Item
           label="使用3G/4G/5G网络播放"
@@ -110,20 +126,20 @@ export const SettingHome = () => {
       <Section
         title='账号设置'
       >
-        {useBasicApi.account ? 
-        <>
-          <Item
-            label='切换用户'
-            onPress={() => navigation.navigate('Setting',{screen:'Login'})} />
+        {useBasicApi.account ?
+          <>
+            <Item
+              label='切换用户'
+              onPress={() => navigation.navigate('Setting', { screen: 'Login' })} />
 
-          <Item
-            label='退出登录'
-            onPress={() => quit()}
-            labelStyle={{color: 'red'}} />
-        </> :
+            <Item
+              label='退出登录'
+              onPress={() => quit()}
+              labelStyle={{ color: 'red' }} />
+          </> :
           <Item
             label='登录'
-            onPress={() => navigation.navigate('Setting',{screen:'Login'})} />
+            onPress={() => navigation.navigate('Setting', { screen: 'Login' })} />
         }
 
       </Section>

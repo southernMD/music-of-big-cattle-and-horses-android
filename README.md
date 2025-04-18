@@ -2,7 +2,7 @@
 它与我另一个项目<a href="https://github.com/southernMD/music-of-big-cattle-and-horses-plus">大牛马音乐</a>没有关系，它是一个使用React Native重新开发的音乐播放器。
 
 ## 清除链接
-adb disconnect
+adb disconnect 
 
 ## 链接模拟器（mumu）
 adb connect 127.0.0.1:7555

@@ -8,6 +8,7 @@ import { View, Text,ScrollView, NativeScrollEvent, NativeSyntheticEvent, DeviceE
 import { useUserCenter } from '@/store/index'
 import { ProfileHeader } from "@/components/UserCenter/ProfileHeader";
 import { ActionBar } from "@/components/UserCenter/ActionBar";
+import AppSS from './ss'
 //orpheus://
 export const UserCenterHome: React.FC = () => {
     const route = useRoute<RouteProp<UserCenterStackParamList>>();
@@ -27,6 +28,7 @@ export const UserCenterHome: React.FC = () => {
         <ScrollView onScroll={Scrolling}>
             <ProfileHeader></ProfileHeader>
             <ActionBar></ActionBar >
+            {/* <AppSS></AppSS> */}
             <Text>
                 Lorem, ipsum dolor sit amet consectetur adipisicing elit. Et nisi odio non, mollitia earum accusamus ex ipsam alias voluptatibus laborum libero. Nostrum ad ab labore eligendi dolores perspiciatis voluptatibus exercitationem.
                 Quisquam minus eaque veritatis neque magnam quas temporibus similique voluptas quae. Laudantium placeat earum iusto eveniet eaque molestiae corrupti voluptas voluptatum adipisci commodi. Quod deserunt autem asperiores quae. Nam, illo!

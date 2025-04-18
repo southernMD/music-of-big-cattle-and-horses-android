@@ -1,16 +1,15 @@
 import { proxy } from 'valtio';
 import { Login, getDetail, quitLogin } from '@/api'; // 假设这是你的 API 方法
-import { BaseApiType, UserCenterType } from '@/types/store';
+import { BaseApiType, UserCenterType, GlobalType } from '@/types/store';
 import { CodeEnum } from '@/constants/network';
 import { deleteCredentials } from '@/utils/keychain';
-
 // 定义 store
 export const useBasicApi = proxy<BaseApiType>({
     account: null, // 初始状态
     profile: null, // 初始状态
 
     // 异步登录方法
-    async reqLogin(cookie:string) {
+    async reqLogin(cookie: string) {
         try {
             const result = await Login(cookie);
             useBasicApi.account = result.data.account!; // 更新 account 状态
@@ -22,15 +21,15 @@ export const useBasicApi = proxy<BaseApiType>({
             return null
         }
     },
-    async reqQuitLogin(){
+    async reqQuitLogin() {
         try {
             const { code } = await quitLogin();
-            if(code === CodeEnum.SUCCESS){
+            if (code === CodeEnum.SUCCESS) {
                 useBasicApi.profile = null
                 useBasicApi.account = null
                 await deleteCredentials();
                 return true
-            }else{
+            } else {
                 return false
             }
         } catch (error) {
@@ -38,9 +37,14 @@ export const useBasicApi = proxy<BaseApiType>({
         }
 
     }
-    
+
 });
 
 export const useUserCenter = proxy<UserCenterType>({
-    scrollY:0
+    scrollY: 0
 })
+
+export const useGlobal = proxy<GlobalType>({
+    theme: 'light',
+    primaryColor: 'rgba(102, 204, 255,1)'
+},)

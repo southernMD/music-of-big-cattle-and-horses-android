@@ -8,3 +8,8 @@ export type BaseApiType = {
 export type UserCenterType = {
     scrollY:number
 }
+
+export type GlobalType = {
+    theme: 'light' | 'dark'
+    primaryColor: string
+}

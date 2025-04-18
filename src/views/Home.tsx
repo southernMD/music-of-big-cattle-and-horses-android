@@ -6,6 +6,7 @@ import { NativeEventEmitter, NativeModules, AppRegistry } from 'react-native';
 import { NativeModulesPlayMusicManager, backgroundPlayMusic } from '@/backgroundTasks/NativeMusicPlayer';
 import Sound from 'react-native-sound';
 import type { RootStackNavigationProps } from '@/types/NavigationType'
+import { getItem,setItem, usePersistentStore } from '@/hooks/usePersistentStore';
 export const Home: React.FC = () => {
   const [headlessTaskId, setHeadlessTaskId] = useState(0);
   // fetch('https://international.v1.hitokoto.cn').then((res) => res.json()).then((data) => { console.log(data) })
@@ -97,6 +98,17 @@ export const Home: React.FC = () => {
   }
 
   const navigation = useNavigation<RootStackNavigationProps>();
+  const isDark = usePersistentStore<boolean>('isDark', false);
+  const primaryColor = usePersistentStore<string>('primaryColor', 'rgba(102, 204, 255,1)');
+
+  const toggleTheme = async () => {
+    await setItem('isDark', !isDark);
+    console.log(await getItem('isDark'));
+  };
+
+  const togglePrimaryColor = async () => {
+    await setItem('primaryColor', primaryColor === 'rgba(102, 204, 255,1)' ? 'rgba(255, 0, 0,1)' : 'rgba(102, 204, 255,1)');
+  };
   return (
     <ImageBackground source={{ uri: 'img' }} style={styles.background} resizeMode='cover'>
       <View style={styles.mainBox}>
@@ -112,6 +124,12 @@ export const Home: React.FC = () => {
           </Button>
           <Button style={styles.buttonStyle} onPress={() => navigation.navigate("Main")}>
             <Text>去Test页面</Text>
+          </Button>
+          <Button onPress={toggleTheme}>
+            <Text>主题切换{isDark}</Text>
+          </Button>
+          <Button onPress={togglePrimaryColor}>
+            <Text style={{color:primaryColor}}>主题色切换</Text>
           </Button>
         </View>
       </View>
