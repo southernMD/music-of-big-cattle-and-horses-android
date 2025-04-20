@@ -3,54 +3,176 @@
 import { UserCenterStackParamList } from "@/types/NavigationType";
 import { getCredentials } from "@/utils/keychain";
 import { RouteProp, useRoute } from "@react-navigation/native";
-import { useEffect } from "react";
-import { View, Text,ScrollView, NativeScrollEvent, NativeSyntheticEvent, DeviceEventEmitter} from "react-native";
+import { useDeferredValue, useEffect, useRef, useState } from "react";
+import { View, Text, ScrollView, NativeScrollEvent, NativeSyntheticEvent, DeviceEventEmitter, Animated, StyleSheet, LayoutChangeEvent } from "react-native";
 import { useUserCenter } from '@/store/index'
-import { ProfileHeader } from "@/components/UserCenter/ProfileHeader";
+import ProfileHeader from "@/components/UserCenter/ProfileHeader";
 import { ActionBar } from "@/components/UserCenter/ActionBar";
 import AppSS from './ss'
+import { useSharedValue, withSpring } from "react-native-reanimated";
+import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
+import TabBar from "@/components/UserCenter/TabBar";
+import PlaylistItem from "@/components/PlaylistItem";
+import { useTheme } from "@/hooks/useTheme";
 //orpheus://
+
+const playlists = [
+    {
+        id: '1',
+        image: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+        title: '我喜欢的音乐',
+        count: 301,
+        plays: 3673,
+    },
+    {
+        id: '2',
+        image: 'https://images.pexels.com/photos/1835712/pexels-photo-1835712.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+        title: 'nicorap netrap',
+        count: 41,
+        plays: 254,
+    },
+    {
+        id: '3',
+        image: 'https://images.pexels.com/photos/3721941/pexels-photo-3721941.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+        title: '开发专用歌单',
+        count: 84,
+        plays: 62,
+    },
+    {
+        id: '4',
+        image: 'https://images.pexels.com/photos/1616096/pexels-photo-1616096.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+        title: 'ls',
+        count: 2,
+        plays: 24,
+    },
+    {
+        id: '5',
+        image: 'https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+        title: '@南山有壶酒的十年精选辑',
+        count: 18,
+        plays: 29,
+    },
+];
+
 export const UserCenterHome: React.FC = () => {
     const route = useRoute<RouteProp<UserCenterStackParamList>>();
     const { uid } = route.params; // 获取传递的 uid 参数
     console.log(uid, "头顶尖尖页面");
-    const Scrolling = (event:NativeSyntheticEvent<NativeScrollEvent>)=>{
+    const pullOffset = useSharedValue(0);
+    const scrollY = useSharedValue(0);
+    const { box } = useTheme()
+    const [translateY, setTranslateY] = useState(0)
+    const BaseTop = useRef(0)
+    const HEADER_BAR_HEIGHT = 56;
+    const TabBarLayoutBar = (event: LayoutChangeEvent) => {
+        const { y } = event.nativeEvent.layout
+        BaseTop.current = y
+    }
+    const Scrolling = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         //0 - 80 
         const { y } = event.nativeEvent.contentOffset;
-        if(y <= 80){
+        scrollY.value = y
+        if (y <= 80) {
             useUserCenter.scrollY = y;
-        }else{
+        } else {
             useUserCenter.scrollY = 80;
         }
-
+        if(BaseTop.current - y <= HEADER_BAR_HEIGHT && BaseTop.current - y >=0){
+            setTranslateY(y - BaseTop.current + HEADER_BAR_HEIGHT)
+        }else if(BaseTop.current - y < 0){
+            setTranslateY(HEADER_BAR_HEIGHT)
+        }else{
+            setTranslateY(0)
+        }
     }
+    const panGesture = Gesture.Pan()
+        .onUpdate((e) => {
+            if (scrollY.value <= 0 && e.translationY > 0) {
+                pullOffset.value = e.translationY;
+            }
+        })
+        .onEnd(() => {
+            pullOffset.value = withSpring(0, {
+                stiffness: 150,
+                damping: 20,
+            });
+        });
+
+    const composedGesture = Gesture.Simultaneous(
+        panGesture,
+        Gesture.Native()
+    );
+    const [activeTab, setActiveTab] = useState('music');
+
+    const styles = StyleSheet.create({
+        list: {
+            padding: 16,
+            backgroundColor: box.background.middle
+        }
+    })
+    //歌单 播客 收藏
     return (
-        <ScrollView onScroll={Scrolling}>
-            <ProfileHeader></ProfileHeader>
-            <ActionBar></ActionBar >
-            {/* <AppSS></AppSS> */}
-            <Text>
-                Lorem, ipsum dolor sit amet consectetur adipisicing elit. Et nisi odio non, mollitia earum accusamus ex ipsam alias voluptatibus laborum libero. Nostrum ad ab labore eligendi dolores perspiciatis voluptatibus exercitationem.
-                Quisquam minus eaque veritatis neque magnam quas temporibus similique voluptas quae. Laudantium placeat earum iusto eveniet eaque molestiae corrupti voluptas voluptatum adipisci commodi. Quod deserunt autem asperiores quae. Nam, illo!
-                Cum quisquam voluptas distinctio quis omnis. Temporibus soluta facere voluptatum dolor aliquid dolorum vitae, dolore quis mollitia eaque magnam quo porro repellendus neque excepturi animi vero laboriosam molestias beatae. Aliquid!
-                Eum quam obcaecati sequi aperiam provident magni doloremque odit magnam dolorum, molestiae sit mollitia voluptas officiis ullam ipsa adipisci illum veniam atque saepe et impedit, culpa molestias repellendus in! Harum.
-                Ab sed, illo obcaecati officia corrupti nostrum modi nam voluptate veniam error beatae cumque assumenda quae reprehenderit non quibusdam veritatis magnam in perspiciatis, tempore dolor repellendus, aut porro? Nesciunt, quisquam.
-                Nesciunt sunt sapiente optio quasi impedit, adipisci rerum corrupti accusantium consectetur. Porro recusandae sed vero rem tenetur commodi pariatur dolor doloribus dolore qui delectus iure explicabo voluptatum exercitationem, nostrum cumque!
-                Minus, at labore doloribus iste ipsam magni fuga doloremque soluta perferendis, et harum totam molestias mollitia! Vitae, nulla corrupti, consectetur quod assumenda qui necessitatibus nesciunt adipisci placeat dolore ducimus eius.
-                Consequuntur incidunt laudantium sed sit perferendis maxime nisi sequi repellat repellendus dolorem tenetur, quis mollitia quia recusandae ratione voluptas omnis quae reprehenderit dolor officia, ducimus expedita laboriosam. Architecto, dolorum ratione?
-                Commodi vel esse mollitia nisi, totam voluptates deleniti soluta atque voluptas iste molestiae quisquam accusantium sequi. Aperiam vero nobis sunt ratione ea ullam explicabo eius non omnis ipsam! Incidunt, officiis!
-                Possimus animi nulla harum incidunt amet consequatur dolorem aliquid aspernatur ullam eveniet voluptatem cum dolore eligendi ea delectus atque quod voluptate sunt, neque quasi. Sapiente mollitia eligendi delectus atque nemo!
-                Reiciendis in nostrum sit optio atque facilis similique. Ratione, eum. Veritatis deserunt ullam, nihil quae cupiditate quod adipisci qui possimus fuga non! Soluta repudiandae reiciendis minus laboriosam, delectus aliquid cum?
-                Nihil, illo! Commodi fuga cum voluptatum ipsam tempore consequatur perspiciatis sunt veniam amet repudiandae doloribus, quas accusamus velit in cumque! At consectetur eveniet hic, tenetur exercitationem porro est dolorum rerum.
-                Porro quibusdam delectus libero, adipisci eius, corporis beatae accusantium reprehenderit illo fugit veritatis debitis unde sunt saepe ipsa maiores, aut id eaque nostrum? Unde harum aspernatur adipisci assumenda, debitis distinctio.
-                Ut similique ex error repellendus consequuntur eligendi, qui earum culpa at amet. Quo, ullam ratione nostrum repudiandae a, repellat animi nisi ut laborum aspernatur optio eius quisquam veniam, ea voluptate.
-                Voluptates, repudiandae sint earum dignissimos, quaerat quos culpa ullam nihil maiores ut ducimus rerum consequatur illum harum commodi officiis assumenda fugit, dicta vel ipsa cum ipsam. Deleniti alias sequi magni.
-                Cumque excepturi autem cupiditate doloremque maxime fugiat natus corrupti in odio delectus. Totam libero tempora vero beatae alias sed unde nesciunt, tempore facere corporis provident quibusdam laborum consectetur esse nemo?
-                Asperiores ex minima assumenda repellat perspiciatis porro et exercitationem, laborum hic earum consequuntur voluptate fugiat molestias necessitatibus modi, quod ipsa sed suscipit, nostrum beatae culpa animi veniam repudiandae aspernatur? Itaque!
-                Aliquid, quaerat perferendis reprehenderit error repellendus nemo quo optio. In, consectetur pariatur praesentium quisquam provident, vel nostrum delectus quo corporis tempora officia officiis ullam rem debitis ab aliquid amet aliquam?
-                Quod ducimus veritatis nobis maxime vitae accusamus fugiat labore commodi et natus optio nisi ipsam laboriosam, excepturi numquam error voluptatibus quia earum reprehenderit quas distinctio, amet, cumque minima. Libero, distinctio.
-                Provident esse dolores eius corrupti, dolor impedit suscipit eveniet ullam delectus nihil accusantium ipsam, facere a voluptas sequi deserunt omnis facilis sit deleniti quae numquam illum libero! Sapiente, nobis commodi.
-            </Text>
-        </ScrollView>
+        <GestureDetector gesture={composedGesture}>
+            <Animated.ScrollView
+                onScroll={Scrolling}
+                stickyHeaderIndices={[1]}
+            >
+                <ProfileHeader pullOffset={pullOffset} />
+
+                <TabBar
+                    translateY={translateY}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    tabs={[
+                        { key: 'music', name: '音乐' },
+                        { key: 'broadcast', name: '播客' },
+                        { key: 'start', name: '收藏' },
+                    ]}
+                    onLayout={TabBarLayoutBar}
+                />
+
+                {activeTab === 'music' && (
+                    <View style={styles.list}>
+                        {playlists.map((playlist) => (
+                            <PlaylistItem
+                                key={playlist.id}
+                                image={playlist.image}
+                                title={playlist.title}
+                                count={playlist.count}
+                                plays={playlist.plays}
+                                onPress={() => console.log('Playlist pressed:', playlist.title)}
+                            />
+                        ))}
+                    </View>
+                )}
+                <Text>
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eius, odio quidem obcaecati impedit fugit adipisci architecto commodi expedita libero. Commodi repudiandae quisquam, saepe corrupti vero excepturi enim nemo dignissimos similique?
+                </Text>
+            </Animated.ScrollView>
+        </GestureDetector>
     );
 };

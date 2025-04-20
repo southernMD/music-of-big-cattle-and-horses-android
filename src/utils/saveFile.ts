@@ -35,3 +35,34 @@ export const saveBase64ImageToGallery = async (base64Data: string) => {
         throw new Error('保存图片失败');
     }
 };
+
+export const saveImageUrlToGallery = async (imageUrl: string) => {
+    const hasPermission = await requestStoragePermission();
+    if (!hasPermission) {
+        throw new Error('权限被拒绝');
+    }
+
+    try {
+        console.log(imageUrl);
+        const storeLocation = `${RNFS.DownloadDirectoryPath}`; // 获取到的文档目录路径
+        let pathName = new Date().getTime() + ".png"; // 生成的图片名，这里使用当前时间戳来作为图片名字
+        let downloadDest = `${storeLocation}/${pathName}`; // 最终保存图片的完整路径 拼接得来
+        console.log(downloadDest);
+
+        // 使用 RNFS.downloadFile 下载图片并保存到本地
+        const download = RNFS.downloadFile({
+            fromUrl: imageUrl,
+            toFile: downloadDest,
+        });
+
+        // 等待下载完成
+        const res = await download.promise;
+
+        // 刷新图片到相册
+        const msg = await NativeModules.QrCode.refreshImg(downloadDest);
+        return downloadDest;
+    } catch (error) {
+        console.log(error);
+        throw new Error('保存图片失败');
+    }
+};

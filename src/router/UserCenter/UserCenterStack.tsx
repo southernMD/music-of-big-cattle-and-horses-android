@@ -2,7 +2,7 @@ import { UserCenterStackParamList } from "@/types/NavigationType";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { UserCenterHome } from "@/views/UserCenter/UserCenterHome";
 import { CustomHeaderTitle } from "./UserCenterHeader";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useEffect, useState } from "react";
 import { subscribeKey } from "valtio/utils";
 import { useUserCenter } from "@/store";
@@ -19,11 +19,12 @@ const DynamicHeaderBackground = () => {
     });
     return () => unsubscribe();
   }, []);
-
   return (
     <View style={{
       flex: 1,
-      backgroundColor: `rgba(28, 28, 30,${opacity})`
+      backgroundColor: `rgba(28, 28, 30,${opacity})`,
+      // backgroundColor: `rgba(28, 28, 30,${0})`,
+
     }} />
   );
 };

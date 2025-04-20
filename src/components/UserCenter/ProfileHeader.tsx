@@ -1,154 +1,115 @@
-import { View, Text, Image, StyleSheet, TouchableOpacity, ImageBackground, Pressable } from 'react-native';
-import { Shield, MapPin } from 'lucide-react-native';
+import { View, Text, Image, StyleSheet, Pressable } from 'react-native';
 import { useFullScreenImage } from '@/context/imgFullPreviewContext';
+import { useBasicApi } from '@/store';
+import { convertHttpToHttps } from '@/utils/fixHttp';
+import { ComponentType, memo, useEffect, useMemo, useState } from 'react';
+import { useSnapshot } from 'valtio';
+import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
+import { AnimatedOrRegular } from '@/utils/AnimatedOrRegular';
 
-export function ProfileHeader() {
-    const { showFullScreenImage } = useFullScreenImage();
-    return (
-        <ImageBackground source={{ uri: 'img' }} style={styles.container}>
+function ProfileHeader({ pullOffset }: { pullOffset: SharedValue<number> }) {
+  const { profile } = useSnapshot(useBasicApi);
+  const { showFullScreenImage, isVisible } = useFullScreenImage();
+  const backgroundUrl = useMemo(() => convertHttpToHttps(profile?.backgroundUrl), [profile?.backgroundUrl]);
+  const avatarUrl = useMemo(() => convertHttpToHttps(profile?.avatarUrl), [profile?.avatarUrl]);
+  const animatedStyle = useAnimatedStyle(() => {
+    const scale = Math.max(1 + pullOffset.value / 1000,1);
+    console.log(scale);
+    return {
+      transform: [{ scale }],
+    };
+  });
+  const tranStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: pullOffset.value / 10 }],
+    };
+  });
+  const pressHandler = (url: string) => {
+    showFullScreenImage(url)
+  };
 
-            <Pressable onPress={()=>showFullScreenImage('img')} style={styles.overlay}>
-                <View  />
-            </Pressable>
+  return (
+    <View style={styles.container}>
+      <AnimatedOrRegular
+        isAnimated={!isVisible}
+        component={Image}
+        source={{ uri: backgroundUrl }}
+        style={styles.backgroundImage}
+        animatedStyle={animatedStyle}
+        resizeMode="cover"
+      />
 
-            <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=800&auto=format&fit=crop' }}
-                style={styles.avatar}
-            />
-            <Text style={styles.name}>南山有壶酒</Text>
+      <Pressable onPress={() => pressHandler(backgroundUrl)} style={styles.overlay}>
+        <View />
+      </Pressable>
 
-            <TouchableOpacity style={styles.vipButton}>
-                <View style={styles.vipBadge} />
-                <Text style={styles.vipText}>VIP</Text>
-                <Text style={styles.vipPrice}>¥4.8开通</Text>
-                <Text style={styles.chevron}>›</Text>
-            </TouchableOpacity>
+      <Pressable onPress={() => pressHandler(avatarUrl)}>
+        <AnimatedOrRegular
+          isAnimated={!isVisible}
+          component={Image}
+          source={{ uri: avatarUrl }}
+          style={styles.avatar}
+          animatedStyle={tranStyle}
+        />
+      </Pressable>
 
-            <Text style={styles.bio}>个人简介被吃了，宣传一下我的blog: www.southernmd.top</Text>
+      <AnimatedOrRegular
+        isAnimated={!isVisible}
+        component={Text}
+        style={styles.name}
+        animatedStyle={tranStyle}
+      >
+        {profile?.nickname}
+      </AnimatedOrRegular>
 
-            <View style={styles.badgeContainer}>
-                <View style={styles.badge}>
-                    <Shield size={16} color="#fff" />
-                    <Text style={styles.badgeText}>13枚徽章</Text>
-                </View>
-                <View style={styles.badge}>
-                    <MapPin size={16} color="#666" />
-                    <Text style={styles.badgeText}>魂音泉乐迷 · 浙江 杭州</Text>
-                </View>
-            </View>
-
-            <View style={styles.statsContainer}>
-                <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>14</Text>
-                    <Text style={styles.statLabel}>关注</Text>
-                </View>
-                <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>16</Text>
-                    <Text style={styles.statLabel}>粉丝</Text>
-                </View>
-                <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>Lv.9</Text>
-                    <Text style={styles.statLabel}>等级</Text>
-                </View>
-                <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>7081</Text>
-                    <Text style={styles.statLabel}>小时</Text>
-                </View>
-            </View>
-        </ImageBackground>
-    );
+      <AnimatedOrRegular
+        isAnimated={!isVisible}
+        component={Text}
+        style={styles.bio}
+        animatedStyle={tranStyle}
+      >
+        {profile?.signature}
+      </AnimatedOrRegular>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        alignItems: 'center',
-        paddingTop: 100,
-        paddingHorizontal: 16,
-    },
-    overlay: {
-        ...StyleSheet.absoluteFillObject, // 覆盖整个背景
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', // 半透明黑色蒙版
-      },
-    avatar: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        marginBottom: 12,
-    },
-    name: {
-        fontSize: 24,
-        fontWeight: '600',
-        color: '#fff',
-        marginBottom: 12,
-    },
-    vipButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        borderRadius: 20,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        marginBottom: 16,
-    },
-    vipBadge: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#ff4757',
-        marginRight: 6,
-    },
-    vipText: {
-        color: '#ff4757',
-        fontWeight: '600',
-        marginRight: 6,
-    },
-    vipPrice: {
-        color: '#fff',
-        fontSize: 12,
-    },
-    chevron: {
-        color: '#666',
-        marginLeft: 4,
-    },
-    bio: {
-        color: '#999',
-        textAlign: 'center',
-        marginBottom: 16,
-        fontSize: 14,
-    },
-    badgeContainer: {
-        flexDirection: 'row',
-        gap: 12,
-        marginBottom: 24,
-    },
-    badge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    badgeText: {
-        color: '#666',
-        fontSize: 12,
-    },
-    statsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        width: '100%',
-        paddingVertical: 16,
-        borderTopWidth: StyleSheet.hairlineWidth,
-        borderTopColor: 'rgba(255,255,255,0.1)',
-    },
-    statItem: {
-        alignItems: 'center',
-    },
-    statNumber: {
-        color: '#fff',
-        fontSize: 20,
-        fontWeight: '600',
-        marginBottom: 4,
-    },
-    statLabel: {
-        color: '#666',
-        fontSize: 12,
-    },
+  container: {
+    alignItems: 'center',
+    paddingTop: 100,
+    paddingHorizontal: 16,
+    justifyContent: 'flex-start',
+    overflow: 'hidden',
+    height: 400, // 自定义背景高度
+  },
+  backgroundImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  profile: {
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 12,
+  },
+  name: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 12,
+  },
+  bio: {
+    color: '#ccc',
+    textAlign: 'center',
+    fontSize: 14,
+  },
 });
+
+export default memo(ProfileHeader);

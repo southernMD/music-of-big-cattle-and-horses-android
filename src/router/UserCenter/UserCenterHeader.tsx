@@ -20,20 +20,14 @@ export const CustomHeaderTitle = ({ title }: { title: string }) => {
 
 
     return (
-        <View style={styles.container}>
-            {/* 左侧留空 */}
-            <View style={styles.leftPlaceholder} />
-
-            {/* 中间：头像和昵称 */}
-            <View style={styles.centerContent}>
+        <View style={styles.centerContent}>
+            <View style={styles.left}>
                 <Image
                     source={{ uri: avatarUrl || '默认头像URL' }}
                     style={styles.avatar}
                 />
                 <Text style={styles.nickname}>{nickname || '未知用户'}</Text>
             </View>
-
-            {/* 右侧：搜索图标和三个竖点图标 */}
             <View style={styles.rightIcons}>
                 <Icon name="search" size={20} color="#fff" style={styles.icon} />
                 <Icon name="more" size={20} color="#fff" style={styles.icon} />
@@ -42,18 +36,12 @@ export const CustomHeaderTitle = ({ title }: { title: string }) => {
     );
 };
 const styles = StyleSheet.create({
-    container: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between', // 左右两侧和中间内容均匀分布
-        width: '100%', // 占满整个宽度
-    },
-    leftPlaceholder: {
-        width: 24, // 左侧占位宽度
-    },
+
     centerContent: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between', // 左右两侧和中间内容均匀分布
+        width: '80%', // 占满整个宽度
     },
     avatar: {
         width: 32,
@@ -65,6 +53,10 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         color: '#fff',
+    },
+    left: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     rightIcons: {
         flexDirection: 'row',

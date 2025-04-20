@@ -163,7 +163,7 @@ export const Dark: ExtendedTheme = {
   colors: {
     ...DarkTheme.colors,
     primary: 'rgba(10, 132, 255, 1)',
-    background: 'rgba(0, 0, 0, 1)',
+    background: 'rgba(18, 18, 20, 1)',
     card: 'rgba(28, 28, 30, 1)',
     text: 'rgba(229, 229, 234, 1)',
     border: 'rgba(56, 56, 58, 1)',
