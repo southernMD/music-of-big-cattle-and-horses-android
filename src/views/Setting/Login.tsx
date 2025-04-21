@@ -1,6 +1,7 @@
 import { qrCheck, qrImage, qrKey, quitLogin } from "@/api";
 import { OLD_NETEASE_CLOUD_MUSIC, NEW_NETEASE_CLOUD_MUSIC } from "@/constants/link";
 import { CodeEnum } from "@/constants/network";
+import { useLoadingModal } from "@/context/LoadingModalContext";
 import { useBasicApi } from "@/store";
 import { RootStackNavigationProps } from "@/types/NavigationType";
 import { deleteFile } from "@/utils/deleteFile";
@@ -141,8 +142,11 @@ export const Login: React.FC = () => {
         return unsubscribe;
     }, [navigation, timer]);
 
+      const { showLoadingModal } = useLoadingModal()
+    
     useEffect(() => {
         if (flag) {
+            const { clear } = showLoadingModal()
             setIsLoading(true);
             console.log(flag, path, "球球你阻止我");
             if (path) deleteFile(path);
@@ -154,6 +158,7 @@ export const Login: React.FC = () => {
                     await reqLogin(cookie.password)
                     console.log(account, profile, useBasicApi.account, useBasicApi.profile);
                     setIsLoading(false)
+                    clear()
                     queueMicrotask(() => {
                         navigation.dispatch(
                             CommonActions.reset({
@@ -166,6 +171,7 @@ export const Login: React.FC = () => {
                     })
                 }
                 setIsLoading(false)
+                clear()
             })();
         }
     }, [flag, path]);
@@ -287,11 +293,6 @@ export const Login: React.FC = () => {
             </Button>
             <Text>{userMsg}</Text>
 
-            <Modal visible={isLoading} transparent animationType="fade">
-                <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="large" color="#f4511e" />
-                </View>
-            </Modal>
         </View>
     );
 };

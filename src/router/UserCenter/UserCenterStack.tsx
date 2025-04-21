@@ -1,6 +1,6 @@
 import { UserCenterStackParamList } from "@/types/NavigationType";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { UserCenterHome } from "@/views/UserCenter/UserCenterHome";
+import UserCenterHome from "@/views/UserCenter/UserCenterHome";
 import { CustomHeaderTitle } from "./UserCenterHeader";
 import { StyleSheet, View } from "react-native";
 import { useEffect, useState } from "react";

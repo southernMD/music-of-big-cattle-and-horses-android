@@ -3,8 +3,9 @@ import { MoveVertical as MoreVertical } from 'lucide-react-native';
 import { memo } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { Icon } from "@ant-design/react-native";
-
+import FastImage from 'react-native-fast-image'
 interface PlaylistItemProps {
+  type:'song' | 'dj'
   image: string;
   title: string;
   count: number;
@@ -12,8 +13,8 @@ interface PlaylistItemProps {
   onPress?: () => void;
 }
 
-function PlaylistItem({ image, title, count, plays, onPress }: PlaylistItemProps) {
-  const { box,typography } = useTheme()
+function PlaylistItem({ image,type, title, count, plays, onPress }: PlaylistItemProps) {
+  const { box, typography } = useTheme()
   const styles = StyleSheet.create({
     container: {
       flexDirection: 'row',
@@ -46,10 +47,13 @@ function PlaylistItem({ image, title, count, plays, onPress }: PlaylistItemProps
   });
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
-      <Image source={{ uri: image }} style={styles.image} />
+      <FastImage
+        source={{ uri: image }}
+        style={styles.image}
+      />
       <View style={styles.content}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{count}首 · {plays}次播放</Text>
+        <Text style={styles.subtitle}>{count}首 · {plays}{type==='song'?'次播放':'次收藏'}</Text>
       </View>
       <TouchableOpacity style={styles.moreButton}>
         <Icon name="more" size={20} color={typography.colors.medium.default} />

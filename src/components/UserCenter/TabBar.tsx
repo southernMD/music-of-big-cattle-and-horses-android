@@ -1,4 +1,4 @@
-import React, { memo, useRef, useEffect, useState } from 'react';
+import React, { memo, useRef, useEffect, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, LayoutChangeEvent } from 'react-native';
 import Animated, {
     useSharedValue,
@@ -10,17 +10,19 @@ import { usePersistentStore } from '@/hooks/usePersistentStore';
 import { useFullScreenImage } from '@/context/imgFullPreviewContext';
 import { AnimatedOrRegular } from '@/utils/AnimatedOrRegular';
 
+
 interface TabBarProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
     tabs: { key: string; name: string }[];
     translateY?: number
-    position:'relative' | 'absolute'
-    onLayout?: (e:LayoutChangeEvent) => void
+    position: 'relative' | 'absolute'
+    onLayout?: (e: LayoutChangeEvent) => void
 }
 
-function TabBar({ activeTab, onTabChange, tabs, translateY,position,onLayout }: TabBarProps) {
+function TabBar({ activeTab, onTabChange, tabs, translateY, position, onLayout }: TabBarProps) {
     const { typography, box } = useTheme();
+    console.log('触发');
 
     const activeLeft = useSharedValue(0);
     const activeWidth = useSharedValue(0);
@@ -39,11 +41,15 @@ function TabBar({ activeTab, onTabChange, tabs, translateY,position,onLayout }: 
 
         const index = tabs.findIndex(t => t.key === activeTab);
         if (index === -1 || !textRefs.current[index]) return;
+        console.log(activeTab, "activeTab是我", index);
 
-        textRefs.current[index]?.measure((x, y, w, h, pageX) => {
-            activeLeft.value = withTiming(pageX, { duration: 300 });
-            activeWidth.value = withTiming(w, { duration: 300 });
-        });
+        //@ts-ignore i can use this
+        requestIdleCallback(() => {
+            textRefs.current[index]?.measure((x, y, w, h, pageX) => {
+                activeLeft.value = withTiming(pageX, { duration: 300 });
+                activeWidth.value = withTiming(w, { duration: 300 });
+            });
+        })
     }, [activeTab, layoutReady]);
 
     const onTextLayout = (index: number) => () => {
@@ -56,10 +62,10 @@ function TabBar({ activeTab, onTabChange, tabs, translateY,position,onLayout }: 
     const styles = StyleSheet.create({
         container: {
             flexDirection: 'row',
-            position:position,
+            position: position,
             backgroundColor: box.background.shallow,
             top: translateY,
-            zIndex:1
+            zIndex: 1
         },
         tab: {
             flex: 1,
@@ -82,7 +88,7 @@ function TabBar({ activeTab, onTabChange, tabs, translateY,position,onLayout }: 
             borderRadius: 2,
         },
     });
-  const { isVisible } = useFullScreenImage();
+    const { isVisible } = useFullScreenImage();
 
     return (
         <View style={styles.container} onLayout={onLayout}>

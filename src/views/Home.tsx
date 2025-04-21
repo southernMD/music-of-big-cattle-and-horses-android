@@ -1,4 +1,4 @@
-import React, { StrictMode, useEffect, useState } from 'react';
+import React, { StrictMode, useCallback, useEffect, useState } from 'react';
 import { SafeAreaView, Text, StyleSheet, ImageBackground, Alert, View, KeyboardAvoidingView } from 'react-native';
 import { createStaticNavigation, NavigationProp, ParamListBase, useNavigation } from '@react-navigation/native';
 import { Button, Icon } from '@ant-design/react-native';
@@ -6,11 +6,14 @@ import { NativeEventEmitter, NativeModules, AppRegistry } from 'react-native';
 import { NativeModulesPlayMusicManager, backgroundPlayMusic } from '@/backgroundTasks/NativeMusicPlayer';
 import Sound from 'react-native-sound';
 import type { RootStackNavigationProps } from '@/types/NavigationType'
-import { getItem,setItem, usePersistentStore } from '@/hooks/usePersistentStore';
+import { getItem, setItem, usePersistentStore } from '@/hooks/usePersistentStore';
+import { useSnapshot } from 'valtio';
+import { useBasicApi } from '@/store';
+import { useLoadingModal } from '@/context/LoadingModalContext';
+import { getCredentials } from '@/utils/keychain';
 export const Home: React.FC = () => {
   const [headlessTaskId, setHeadlessTaskId] = useState(0);
   // fetch('https://international.v1.hitokoto.cn').then((res) => res.json()).then((data) => { console.log(data) })
-
   const handleBackgroundPlayMusic = async type => {
     try {
       const taskId = Math.ceil(Math.random() * 10000000);
@@ -57,10 +60,10 @@ export const Home: React.FC = () => {
       taskId,
       taskKey,
       payload: {
-        mp3FileName:'',
+        mp3FileName: '',
         playerStatus: 'play',
         taskId,
-        playWay:'online'
+        playWay: 'online'
       },
     } as HeadlessTaskMusicPlayer)
     // const url = await fetch('https://ncm.nekogan.com/song/url/v1?id=29777226&level=standard').then((res) => res.json()).then((data) => Promise.resolve(data.data[0].url.replace("http", "https"))).catch(error => { console.log(error) })
@@ -109,6 +112,25 @@ export const Home: React.FC = () => {
   const togglePrimaryColor = async () => {
     await setItem('primaryColor', primaryColor === 'rgba(102, 204, 255,1)' ? 'rgba(255, 0, 0,1)' : 'rgba(102, 204, 255,1)');
   };
+  // const { clear } = showLoadingModal()
+  // await reqLogin(credentials.password)
+  // clear()
+  const { reqLogin } = useSnapshot(useBasicApi)
+  const { showLoadingModal } = useLoadingModal()
+  useEffect(() => {
+    (async () => {
+      try {
+        const credentials = await getCredentials();
+        if (credentials) {
+          const { clear } = showLoadingModal();
+          await reqLogin(credentials.password);
+          clear();
+        }
+      } catch (error) {
+        console.error("Authentication failed:", error);
+      }
+    })()
+  }, []);
   return (
     <ImageBackground source={{ uri: 'img' }} style={styles.background} resizeMode='cover'>
       <View style={styles.mainBox}>
@@ -129,7 +151,7 @@ export const Home: React.FC = () => {
             <Text>主题切换{isDark}</Text>
           </Button>
           <Button onPress={togglePrimaryColor}>
-            <Text style={{color:primaryColor}}>主题色切换</Text>
+            <Text style={{ color: primaryColor }}>主题色切换</Text>
           </Button>
         </View>
       </View>

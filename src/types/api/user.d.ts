@@ -52,3 +52,16 @@ export type UserDetailType = {
 export type QuitLoginType = {
     code: CodeEnum,
 }
+
+export type UserPlaylistType = {
+    code: CodeEnum,
+    playlist: playListItem[]
+}
+
+export type UserDjType = {
+    code: CodeEnum,
+    djRadios: djItem[],
+    hasMore: false,
+    count: number,
+    subCount: number,
+}

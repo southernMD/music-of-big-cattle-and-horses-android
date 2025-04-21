@@ -1,6 +1,6 @@
 import { QrCheckType, QrImageType, qrKeyType } from "@/types/api/qr";
 import { customFetch as fetch } from "./init";
-import { LoginUserType, QuitLoginType, UserDetailType } from "@/types/api/user";
+import { LoginUserType, QuitLoginType, UserDetailType, UserDjType, UserPlaylistType } from "@/types/api/user";
 
 export const apiTest = async () => {
    return fetch('/user/playlist?uid=361080509')
@@ -53,6 +53,22 @@ export const getDetail = async (uid:number)=>{
 export const quitLogin = async ()=>{
     //返回的是promise对象
     return await fetch<QuitLoginType>(`/logout`, {
+        method: 'GET'
+    });
+}
+
+export const userPlaylist = async (uid:number,limit = 30,offset = 0)=>{
+    return await fetch<UserPlaylistType>(`/user/playlist?uid=${uid}`, {
+        method: 'POST',
+        body:JSON.stringify({
+            limit,
+            offset
+        })
+    });
+}
+
+export const userDj = async (uid:number)=>{
+    return await fetch<UserDjType>(`/user/audio?uid=${uid}`, {
         method: 'GET'
     });
 }

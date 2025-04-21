@@ -6,9 +6,9 @@ import { ComponentType, memo, useEffect, useMemo, useState } from 'react';
 import { useSnapshot } from 'valtio';
 import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { AnimatedOrRegular } from '@/utils/AnimatedOrRegular';
+import { userProfile } from '@/types/user/user';
 
-function ProfileHeader({ pullOffset }: { pullOffset: SharedValue<number> }) {
-  const { profile } = useSnapshot(useBasicApi);
+function ProfileHeader({ pullOffset, profile }: { pullOffset: SharedValue<number>,profile:userProfile | null }) {
   const { showFullScreenImage, isVisible } = useFullScreenImage();
   const backgroundUrl = useMemo(() => convertHttpToHttps(profile?.backgroundUrl), [profile?.backgroundUrl]);
   const avatarUrl = useMemo(() => convertHttpToHttps(profile?.avatarUrl), [profile?.avatarUrl]);

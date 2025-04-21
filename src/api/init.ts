@@ -42,7 +42,6 @@ export async function customFetch(url: string, config: RequestInit = {}, jsonFla
 
     // 创建 AbortController 用于超时控制
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
-
     try {
         // 应用全局请求拦截器
         const modifiedConfig = requestInterceptor({
@@ -62,6 +61,7 @@ export async function customFetch(url: string, config: RequestInit = {}, jsonFla
     } catch (error: any) {
         // 清除超时定时器
         clearTimeout(timeoutId);
+        console.log(error);
 
         // 将错误传递给响应拦截器
         return responseInterceptor(error, jsonFlag);

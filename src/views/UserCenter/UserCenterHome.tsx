@@ -1,8 +1,16 @@
 import { UserCenterStackParamList } from "@/types/NavigationType";
 import { RouteProp, useRoute } from "@react-navigation/native";
-import { useEffect, useRef, useState } from "react";
-import { View, Text, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, LayoutChangeEvent } from "react-native";
-import { useUserCenter } from '@/store/index';
+import { memo, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+    View,
+    Text,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
+    StyleSheet,
+    LayoutChangeEvent,
+    FlatList,
+} from "react-native";
+import { useBasicApi, useUserCenter } from "@/store/index";
 import ProfileHeader from "@/components/UserCenter/ProfileHeader";
 import { useTheme } from "@/hooks/useTheme";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -10,51 +18,19 @@ import PlaylistItem from "@/components/PlaylistItem";
 import Animated, {
     useSharedValue,
     withSpring,
-    useAnimatedStyle
 } from "react-native-reanimated";
 
 import TabBar from "@/components/UserCenter/TabBar";
+import { userProfile } from "@/types/user/user";
+import { getDetail, userDj, userPlaylist } from "@/api";
+import { useLoadingModal } from "@/context/LoadingModalContext";
+import { playListItem } from "@/types/api/playListItem";
+import { convertHttpToHttps } from "@/utils/fixHttp";
+import { djItem } from "@/types/api/djItem";
+import { InteractionManager } from "react-native";
+import { useThrottleCallback } from "@/hooks/useThrottleCallback";
 
-const playlists = [
-    {
-        id: '1',
-        image: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-        title: '我喜欢的音乐',
-        count: 301,
-        plays: 3673,
-    },
-    {
-        id: '2',
-        image: 'https://images.pexels.com/photos/1835712/pexels-photo-1835712.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-        title: 'nicorap netrap',
-        count: 41,
-        plays: 254,
-    },
-    {
-        id: '3',
-        image: 'https://images.pexels.com/photos/3721941/pexels-photo-3721941.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-        title: '开发专用歌单',
-        count: 84,
-        plays: 62,
-    },
-    {
-        id: '4',
-        image: 'https://images.pexels.com/photos/1616096/pexels-photo-1616096.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-        title: 'ls',
-        count: 2,
-        plays: 24,
-    },
-    {
-        id: '5',
-        image: 'https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-        title: '@南山有壶酒的十年精选辑',
-        count: 18,
-        plays: 29,
-    },
-];
-
-
-export const UserCenterHome: React.FC = () => {
+const UserCenterHome: React.FC = () => {
     const route = useRoute<RouteProp<UserCenterStackParamList>>();
     const { uid } = route.params;
     console.log(uid, "头顶尖尖页面");
@@ -63,11 +39,11 @@ export const UserCenterHome: React.FC = () => {
     const scrollY = useSharedValue(0);
     const pullOffset = useSharedValue(0);
     const HEADER_BAR_HEIGHT = 56;
-    const BaseTop = useRef(0)
-    const [translateY, setTranslateY] = useState(0)
+    const BaseTop = useRef(0);
+    const [translateY, setTranslateY] = useState(0);
     const TabBarLayoutBar = (event: LayoutChangeEvent) => {
         const { y } = event.nativeEvent.layout;
-        BaseTop.current = y
+        BaseTop.current = y;
     };
 
     const Scrolling = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -79,11 +55,11 @@ export const UserCenterHome: React.FC = () => {
         } else {
             useUserCenter.scrollY = 80;
         }
-        
+
         if (BaseTop.current - y <= HEADER_BAR_HEIGHT) {
-            setTranslateY(HEADER_BAR_HEIGHT)
+            setTranslateY(HEADER_BAR_HEIGHT);
         } else {
-            setTranslateY(0)
+            setTranslateY(0);
         }
     };
 
@@ -102,93 +78,156 @@ export const UserCenterHome: React.FC = () => {
 
     const composedGesture = Gesture.Simultaneous(panGesture, Gesture.Native());
 
-    const [activeTab, setActiveTab] = useState('music');
+    const [activeTab, setActiveTab] = useState("music");
 
     const styles = StyleSheet.create({
         list: {
-            padding: 16,
+            paddingHorizontal: 16,
             backgroundColor: box.background.middle,
-        }
+        },
     });
 
+    const [finialProfile, setFinialProfile] = useState<userProfile | null>(null);
+    const { showLoadingModal } = useLoadingModal();
+
+    useEffect(() => {
+        if (useBasicApi.profile?.userId === uid) {
+            setFinialProfile(useBasicApi.profile);
+        } else {
+            const { clear } = showLoadingModal();
+            getDetail(uid).then((res) => {
+                setFinialProfile(res.profile);
+                clear();
+            });
+        }
+    }, [route.params]);
+
+    const [finialPlayList, setFinialPlayList] = useState<
+        Array<playListItem | djItem>
+    >([]);
+    const [userlayList, setUserPlayList] = useState<playListItem[]>([]);
+    const [userStartPlayList, setUserStartPlayList] = useState<playListItem[]>(
+        []
+    );
+    const [userCreateDj, setUserCreateDj] = useState<djItem[]>([]);
+    const [limit, setLimit] = useState(5);
+    const [offset, setOffset] = useState(0);
+    const [isDataReady, setIsDataReady] = useState(false);
+
+    useEffect(() => {
+        Promise.all([
+            userPlaylist(uid).then(({ playlist }) => {
+                const index = playlist.findIndex(
+                    (item) => item.creator.userId !== uid
+                );
+                if (index === -1) {
+                    setUserPlayList(playlist);
+                    setUserStartPlayList([]);
+                } else {
+                    setUserPlayList(playlist.slice(0, index));
+                    setUserStartPlayList(playlist.slice(index));
+                }
+            }),
+            userDj(uid).then((res) => {
+                setUserCreateDj(res.djRadios);
+            }),
+        ]).then(() => {
+            setIsDataReady(true);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!isDataReady) return;
+
+        switch (activeTab) {
+            case "music":
+                InteractionManager.runAfterInteractions(() => {
+                    setFinialPlayList(userlayList);
+                });
+                break;
+            case "broadcast":
+                InteractionManager.runAfterInteractions(() => {
+                    setFinialPlayList(userCreateDj);
+                });
+                break;
+            case "start":
+                InteractionManager.runAfterInteractions(() => {
+                    setFinialPlayList(userStartPlayList);
+                });
+                break;
+        }
+    }, [activeTab, isDataReady]);
+
+    const tabs = useMemo(() => [
+        { key: "music", name: "音乐" },
+        { key: "broadcast", name: "播客" },
+        { key: "start", name: "收藏" },
+    ], []);
+    const throttledTabChange = useThrottleCallback((tabKey: string) => {
+        console.log(tabKey,'hnimmmamaa');
+        setActiveTab(tabKey);
+      }, 1000);
+      
     return (
         <View>
-            <View style={{opacity:translateY == 0?0:1}}>
+            {/* 顶部悬浮TabBar */}
+            <View style={{ opacity: translateY === 0 ? 0 : 1 }}>
                 <TabBar
-                    position='absolute'
+                    position="absolute"
                     translateY={translateY}
                     activeTab={activeTab}
-                    onTabChange={setActiveTab}
-                    tabs={[
-                        { key: 'music', name: '音乐' },
-                        { key: 'broadcast', name: '播客' },
-                        { key: 'start', name: '收藏' },
-                    ]}
+                    onTabChange={throttledTabChange}
+                    tabs={tabs}
                 />
             </View>
+
+            {/* 主列表 */}
             <GestureDetector gesture={composedGesture}>
-                <Animated.ScrollView onScroll={Scrolling} scrollEventThrottle={16}>
-                    <ProfileHeader pullOffset={pullOffset} />
-
-                   <TabBar
-                        position='relative'
-                        activeTab={activeTab}
-                        onTabChange={setActiveTab}
-                        tabs={[
-                            { key: 'music', name: '音乐' },
-                            { key: 'broadcast', name: '播客' },
-                            { key: 'start', name: '收藏' },
-                        ]}
-                        onLayout={TabBarLayoutBar}
-                    />
-                    {activeTab === 'music' && (
-                        <View style={styles.list}>
-                            {playlists.map((playlist) => (
+                <FlatList
+                    data={finialPlayList}
+                    keyExtractor={(item) => item.id.toString()}
+                    onScroll={Scrolling}
+                    scrollEventThrottle={16}
+                    removeClippedSubviews={false} 
+                    ListHeaderComponent={
+                        <>
+                            <ProfileHeader pullOffset={pullOffset} profile={finialProfile} />
+                            <TabBar
+                                position="relative"
+                                activeTab={activeTab}
+                                onTabChange={throttledTabChange}
+                                tabs={tabs}
+                                onLayout={TabBarLayoutBar}
+                            />
+                        </>
+                    }
+                    renderItem={({ item }) => {
+                        const imageUrl =
+                            (item as playListItem).coverImgUrl ??
+                            (item as djItem).picUrl;
+                        const songNumber =
+                            (item as playListItem).trackCount ??
+                            (item as djItem).programCount;
+                        const playOrStartNumber = 
+                            (item as djItem).subCount ??
+                            (item as playListItem).playCount 
+                        return (
+                            <View style={styles.list}>
                                 <PlaylistItem
-                                    key={playlist.id}
-                                    image={playlist.image}
-                                    title={playlist.title}
-                                    count={playlist.count}
-                                    plays={playlist.plays}
-                                    onPress={() => console.log('Playlist pressed:', playlist.title)}
+                                    type={(item as djItem).dj ?'dj':'song'}
+                                    image={convertHttpToHttps(imageUrl)}
+                                    title={item.name}
+                                    count={songNumber}
+                                    plays={playOrStartNumber}
+                                    onPress={() => console.log("Playlist pressed:", item.name)}
                                 />
-                            ))}
-                        </View>
-                    )} 
-
-                    <Text>
-                        {/* 内容占位，你可以替换成更多歌单或播客 */}
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                        Lorem ipsum dolor sit amet, consectetur adipisicing elit...
-                    </Text>
-                </Animated.ScrollView>
+                            </View>
+                        );
+                    }}
+                />
             </GestureDetector>
         </View>
-
     );
 };
+
+export default memo(UserCenterHome);
