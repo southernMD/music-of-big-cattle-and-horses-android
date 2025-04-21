@@ -29,8 +29,8 @@ export const CustomHeaderTitle = ({ title }: { title: string }) => {
                 <Text style={styles.nickname}>{nickname || '未知用户'}</Text>
             </View>
             <View style={styles.rightIcons}>
-                <Icon name="search" size={20} color="#fff" style={styles.icon} />
-                <Icon name="more" size={20} color="#fff" style={styles.icon} />
+                <Icon name="search" size={20} color="#fff" style={styles.icon} onPress={() => console.log("Search clicked")} />
+                <Icon name="more" size={20} color="#fff" style={styles.icon} onPress={() => console.log("More clicked")}/>
             </View>
         </View>
     );

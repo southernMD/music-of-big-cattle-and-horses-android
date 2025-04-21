@@ -7,16 +7,19 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTheme } from '@/hooks/useTheme';
 import { usePersistentStore } from '@/hooks/usePersistentStore';
+import { useFullScreenImage } from '@/context/imgFullPreviewContext';
+import { AnimatedOrRegular } from '@/utils/AnimatedOrRegular';
 
 interface TabBarProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
     tabs: { key: string; name: string }[];
-    translateY: number
-    onLayout: (e:LayoutChangeEvent) => void
+    translateY?: number
+    position:'relative' | 'absolute'
+    onLayout?: (e:LayoutChangeEvent) => void
 }
 
-function TabBar({ activeTab, onTabChange, tabs, translateY,onLayout }: TabBarProps) {
+function TabBar({ activeTab, onTabChange, tabs, translateY,position,onLayout }: TabBarProps) {
     const { typography, box } = useTheme();
 
     const activeLeft = useSharedValue(0);
@@ -53,9 +56,10 @@ function TabBar({ activeTab, onTabChange, tabs, translateY,onLayout }: TabBarPro
     const styles = StyleSheet.create({
         container: {
             flexDirection: 'row',
-            position: 'relative',
+            position:position,
             backgroundColor: box.background.shallow,
-            transform: [{ translateY }],
+            top: translateY,
+            zIndex:1
         },
         tab: {
             flex: 1,
@@ -78,6 +82,7 @@ function TabBar({ activeTab, onTabChange, tabs, translateY,onLayout }: TabBarPro
             borderRadius: 2,
         },
     });
+  const { isVisible } = useFullScreenImage();
 
     return (
         <View style={styles.container} onLayout={onLayout}>
@@ -99,8 +104,12 @@ function TabBar({ activeTab, onTabChange, tabs, translateY,onLayout }: TabBarPro
                     </Text>
                 </TouchableOpacity>
             ))}
-
-            <Animated.View style={[styles.underline, animatedStyle]} />
+            <AnimatedOrRegular
+                isAnimated={!isVisible}
+                component={View}
+                animatedStyle={animatedStyle}
+                style={styles.underline}
+            />
         </View>
     );
 }
