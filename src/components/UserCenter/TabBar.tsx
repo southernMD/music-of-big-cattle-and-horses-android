@@ -4,6 +4,7 @@ import Animated, {
     useSharedValue,
     withTiming,
     useAnimatedStyle,
+    SharedValue,
 } from 'react-native-reanimated';
 import { useTheme } from '@/hooks/useTheme';
 import { usePersistentStore } from '@/hooks/usePersistentStore';
@@ -43,13 +44,10 @@ function TabBar({ activeTab, onTabChange, tabs, translateY, position, onLayout }
         if (index === -1 || !textRefs.current[index]) return;
         console.log(activeTab, "activeTab是我", index);
 
-        //@ts-ignore i can use this
-        requestIdleCallback(() => {
-            textRefs.current[index]?.measure((x, y, w, h, pageX) => {
-                activeLeft.value = withTiming(pageX, { duration: 300 });
-                activeWidth.value = withTiming(w, { duration: 300 });
-            });
-        })
+        textRefs.current[index]?.measure((x, y, w, h, pageX) => {
+            activeLeft.value = withTiming(pageX, { duration: 300 });
+            activeWidth.value = withTiming(w, { duration: 300 });
+        });
     }, [activeTab, layoutReady]);
 
     const onTextLayout = (index: number) => () => {
