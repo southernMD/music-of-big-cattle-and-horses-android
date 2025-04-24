@@ -17,16 +17,13 @@ const screenWidth = Dimensions.get("window").width;
 interface TabBarProps {
     onTabChange: (tab: string) => void;
     tabs: { key: string; name: string }[];
-    translateY?: number
     position: 'relative' | 'absolute'
     onLayout?: (e: LayoutChangeEvent) => void
     scrollX?: SharedValue<number>
 }
 
-function TabBar({onTabChange, tabs, translateY, position, onLayout, scrollX }: TabBarProps) {
+function TabBar({onTabChange, tabs, position, onLayout, scrollX }: TabBarProps) {
     const { typography, box } = useTheme();
-    const activeLeft = useSharedValue(0);
-    const activeWidth = useSharedValue(0);
     const primaryColor = usePersistentStore<string>('primaryColor')
     const measures = useSharedValue<{ pageX: number, width: number }[]>([]);
 
@@ -89,7 +86,6 @@ function TabBar({onTabChange, tabs, translateY, position, onLayout, scrollX }: T
             flexDirection: 'row',
             position: position,
             backgroundColor: box.background.shallow,
-            top: translateY,
             zIndex: 1
         },
         tab: {
@@ -132,7 +128,7 @@ function TabBar({onTabChange, tabs, translateY, position, onLayout, scrollX }: T
             };
         });
     return (
-        <View style={styles.container} onLayout={onLayout}>
+        <View style={[styles.container]} onLayout={onLayout}>
             {tabs.map((tab, index) => (
                 <TouchableOpacity
                     key={tab.key}
