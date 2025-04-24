@@ -5,50 +5,77 @@ import Animated, {
     withTiming,
     useAnimatedStyle,
     SharedValue,
+    useDerivedValue,
 } from 'react-native-reanimated';
 import { useTheme } from '@/hooks/useTheme';
 import { usePersistentStore } from '@/hooks/usePersistentStore';
 import { useFullScreenImage } from '@/context/imgFullPreviewContext';
 import { AnimatedOrRegular } from '@/utils/AnimatedOrRegular';
 
+const screenWidth = Dimensions.get("window").width;
 
 interface TabBarProps {
-    activeTab: string;
     onTabChange: (tab: string) => void;
     tabs: { key: string; name: string }[];
     translateY?: number
     position: 'relative' | 'absolute'
     onLayout?: (e: LayoutChangeEvent) => void
+    scrollX?: SharedValue<number>
 }
 
-function TabBar({ activeTab, onTabChange, tabs, translateY, position, onLayout }: TabBarProps) {
+function TabBar({onTabChange, tabs, translateY, position, onLayout, scrollX }: TabBarProps) {
     const { typography, box } = useTheme();
-    console.log('触发');
-
     const activeLeft = useSharedValue(0);
     const activeWidth = useSharedValue(0);
     const primaryColor = usePersistentStore<string>('primaryColor')
+    const measures = useSharedValue<{ pageX: number, width: number }[]>([]);
 
     const textRefs = useRef<(Text | null)[]>([]);
     const [layoutReady, setLayoutReady] = useState(false);
 
-    const animatedStyle = useAnimatedStyle(() => ({
-        width: activeWidth.value,
-        left: activeLeft.value,
-    }));
+    const animatedStyle = useAnimatedStyle(() => {
+        const index = Math.floor((scrollX?.value ?? 0) / screenWidth);
+        const progress = (scrollX?.value ?? 0) / screenWidth - index;
+
+        if (!measures.value[index]) {
+            return {
+                left: 0,
+                width: 0,
+            };
+        }
+
+        const currentMeasure = measures.value[index];
+        const nextMeasure = measures.value[index + 1];
+
+        let left = currentMeasure.pageX;
+        let width = currentMeasure.width;
+
+        if (nextMeasure) {
+            left += progress * (nextMeasure.pageX - currentMeasure.pageX);
+            width += progress * (nextMeasure.width - currentMeasure.width);
+        }
+
+        return { left, width };
+    });
 
     useEffect(() => {
         if (!layoutReady) return;
 
-        const index = tabs.findIndex(t => t.key === activeTab);
-        if (index === -1 || !textRefs.current[index]) return;
-        console.log(activeTab, "activeTab是我", index);
+        const newMeasures: { pageX: number, width: number }[] = [];
+        let measureCount = 0;
 
-        textRefs.current[index]?.measure((x, y, w, h, pageX) => {
-            activeLeft.value = withTiming(pageX, { duration: 300 });
-            activeWidth.value = withTiming(w, { duration: 300 });
+        tabs.forEach((_, index) => {
+            textRefs.current[index]?.measure((x, y, width, height, pageX) => {
+                newMeasures[index] = { pageX, width };
+                measureCount++;
+                if (measureCount === tabs.length) {
+                    measures.value = newMeasures; // 赋值给 shared value
+                }
+            });
         });
-    }, [activeTab, layoutReady]);
+
+    }, [layoutReady, tabs]);
+
 
     const onTextLayout = (index: number) => () => {
         if (index === tabs.length - 1) {
@@ -88,6 +115,22 @@ function TabBar({ activeTab, onTabChange, tabs, translateY, position, onLayout }
     });
     const { isVisible } = useFullScreenImage();
 
+
+    // 获取当前索引
+    const currentIndex = useDerivedValue(() => {
+        return Math.round((scrollX?.value ?? 0) / screenWidth);
+    });
+
+    const animatedTextStyle = (index: number) =>
+        useAnimatedStyle(() => {
+            const isActive = index === currentIndex.value;
+            return {
+                color: isActive
+                    ? typography.colors.medium.active
+                    : typography.colors.medium.default,
+                fontWeight: isActive ? '600' : 'normal',
+            };
+        });
     return (
         <View style={styles.container} onLayout={onLayout}>
             {tabs.map((tab, index) => (
@@ -96,16 +139,14 @@ function TabBar({ activeTab, onTabChange, tabs, translateY, position, onLayout }
                     style={styles.tab}
                     onPress={() => onTabChange(tab.key)}
                 >
-                    <Text
-                        ref={ref => (textRefs.current[index] = ref)}
+                    <AnimatedOrRegular
+                        ref={(ref: Text | null) => (textRefs.current[index] = ref)}
+                        isAnimated={!isVisible}
+                        component={Text}
+                        animatedStyle={animatedTextStyle(index)}
+                        style={styles.tabText}
                         onLayout={onTextLayout(index)}
-                        style={[
-                            styles.tabText,
-                            activeTab === tab.key && styles.activeTabText,
-                        ]}
-                    >
-                        {tab.name}
-                    </Text>
+                    >{tab.name}</AnimatedOrRegular>
                 </TouchableOpacity>
             ))}
             <AnimatedOrRegular

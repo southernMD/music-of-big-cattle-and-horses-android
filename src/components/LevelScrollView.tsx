@@ -19,6 +19,7 @@ import Animated, {
   AnimatedRef,
   useDerivedValue,
   withTiming,
+  cancelAnimation,
 } from "react-native-reanimated";
 import PlaylistItem from "@/components/PlaylistItem";
 import { convertHttpToHttps } from "@/utils/fixHttp";
@@ -39,29 +40,26 @@ export interface LevelScrollViewRef {
 // useAnimatedRef<Animated.ScrollView>
 interface Props {
   tabs: { key: string; name: string }[];
-  activeTabIndex: number;
-  setActiveTabIndex: (index: number) => void;
   scrollY: SharedValue<number>;
   pullOffset: SharedValue<number>;
   profile: userProfile | null;
   contentLists: Array<Array<any>>
   onTabChange: (key: string) => void;
   Scrolling: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  horizontalScrollX: SharedValue<number>
 }
 
 const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
   tabs,
-  activeTabIndex,
-  setActiveTabIndex,
   scrollY,
   pullOffset,
   profile,
   contentLists,
   onTabChange,
   Scrolling,
+  horizontalScrollX
 }, ref) => {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
-  const horizontalScrollX = useSharedValue(0);
   const BaseTop = useRef(0);
   const { box } = useTheme();
 
@@ -138,24 +136,19 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
       const targetX = nextIndex * screenWidth;
 
       // 使用 withTiming 实现动画，并在动画结束后执行回调
+      cancelAnimation(horizontalScrollX);
       horizontalScrollX.value = withTiming(
         targetX,
         { duration: 300 }, // 动画时长
         (isFinished) => {
           if (isFinished) {
             console.log('动画结束');
-            runOnJS(setActiveTabIndex)(nextIndex);
-            isHorizontal.value = true; // 在滚动动画结束后设置 isHorizontal.value = true
+            isHorizontal.value = true; 
           }
         }
       );
       scrollTo(scrollRef, targetX, 0, true);
     })
-
-  useEffect(()=>{
-    horizontalScrollX.value = activeTabIndex * screenWidth;
-  },[activeTabIndex])
-
   const nativeScrollY = useSharedValue(0); 
   const nativeScroll = Gesture.Native()
   .enabled(isHorizontal.value)
@@ -176,15 +169,6 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
     panGesture,
     nativeScroll
   );
-  // const composedGestureFalse = Gesture.Simultaneous(
-  //   directionalPanGesture,
-  //   panGesture,
-  //   Gesture.Native().enabled(false)
-  // );
-
-  // const finialGesture = useMemo(() => {
-  //   return isHorizontal.value ? composedGestureTrue : composedGestureFalse;
-  // }, [isHorizontal.value]);
 
   const loading = useMemo(() => {
     return contentLists.reduce((acc, cur) => acc + cur.length, 0) === 0
@@ -209,10 +193,10 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
             <ProfileHeader pullOffset={pullOffset} profile={profile} />
             <TabBar
               position="relative"
-              activeTab={tabs[activeTabIndex].key}
               onTabChange={onTabChange}
               tabs={tabs}
               onLayout={TabBarLayoutBar}
+              scrollX={horizontalScrollX}
             />
           </>
         }

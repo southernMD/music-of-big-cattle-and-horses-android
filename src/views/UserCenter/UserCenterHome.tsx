@@ -36,8 +36,6 @@ const UserCenterHome: React.FC = () => {
     const pullOffset = useSharedValue(0);
     const HEADER_BAR_HEIGHT = 56;
     const [translateY, setTranslateY] = useState(0);
-    const [activeTabIndex, setActiveTabIndex] = useState(0);
-    // const scrollRef = useAnimatedRef<Animated.ScrollView>();
     const horizontalScrollX = useSharedValue(0);
 
     const Scrolling = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -56,13 +54,10 @@ const UserCenterHome: React.FC = () => {
     const throttledTabChange = useThrottleCallback((key: string) => {
         const index = tabs.findIndex(tab => tab.key === key);
         if (index !== -1) {
-            setActiveTabIndex(index);
-            requestAnimationFrame(() => {
-                levelScrollViewRef.current?.scrollRef.current?.scrollTo({ x: index * screenWidth, animated: true });
-            });
+            levelScrollViewRef.current?.scrollRef.current?.scrollTo({ x: index * screenWidth, animated: true });
             horizontalScrollX.value = index * screenWidth;
         }
-    }, 1000);
+    }, 200);
 
     const [finialProfile, setFinialProfile] = useState<userProfile | null>(null);
     const { showLoadingModal } = useLoadingModal();
@@ -101,27 +96,26 @@ const UserCenterHome: React.FC = () => {
 
     return (
         <View>
-            <View style={{ opacity: translateY === 0 ? 0 : 1 }}>
+            <Animated.View style={{ opacity: translateY === 0 ? 0 : 1 }}>
                 <TabBar
                     position="absolute"
                     translateY={translateY}
-                    activeTab={tabs[activeTabIndex].key}
                     onTabChange={throttledTabChange}
                     tabs={tabs}
+                    scrollX={horizontalScrollX}
                 />
-            </View>
+            </Animated.View>
 
             <LevelScrollView
                 Scrolling={Scrolling}
                 tabs={tabs}
-                activeTabIndex={activeTabIndex}
-                setActiveTabIndex={setActiveTabIndex}
                 scrollY={scrollY}
                 pullOffset={pullOffset}
                 profile={finialProfile}
                 contentLists={contentLists}
                 onTabChange={throttledTabChange}
                 ref={levelScrollViewRef}
+                horizontalScrollX={horizontalScrollX}
             />
         </View>
     );
