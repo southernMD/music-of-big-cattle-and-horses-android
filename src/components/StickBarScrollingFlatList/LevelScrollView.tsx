@@ -21,20 +21,11 @@ import Animated, {
   withTiming,
   cancelAnimation,
 } from "react-native-reanimated";
-import PlaylistItem from "@/components/PlaylistItem";
-import { convertHttpToHttps } from "@/utils/fixHttp";
-import { playListItem } from "@/types/api/playListItem";
-import { djItem } from "@/types/api/djItem";
-import TabBar from "@/components/UserCenter/TabBar";
-import ProfileHeader from "@/components/UserCenter/ProfileHeader";
-import { userProfile } from "@/types/user/user";
-import { useTheme } from "@/hooks/useTheme";
-import LoadingPlaceholder from "./LoadingPlaceholder";
+import LoadingPlaceholder from "@/components/LoadingPlaceholder";
 
 const screenWidth = Dimensions.get("window").width;
 
 export interface LevelScrollViewRef {
-  BaseTop: React.MutableRefObject<number>;
   scrollRef: AnimatedRef<Animated.ScrollView>
 }
 // useAnimatedRef<Animated.ScrollView>
@@ -42,38 +33,23 @@ interface Props {
   tabs: { key: string; name: string }[];
   scrollY: SharedValue<number>;
   pullOffset: SharedValue<number>;
-  profile: userProfile | null;
-  contentLists: Array<Array<any>>
-  onTabChange: (key: string) => void;
+  loading: boolean
   Scrolling: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   horizontalScrollX: SharedValue<number>
+  children: [React.ReactElement,React.ReactElement];
 }
 
 const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
+  children,
   tabs,
   scrollY,
   pullOffset,
-  profile,
-  contentLists,
-  onTabChange,
+  loading,
   Scrolling,
   horizontalScrollX
 }, ref) => {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
-  const BaseTop = useRef(0);
-  const { box } = useTheme();
-
-  const styles = StyleSheet.create({
-    list: {
-      paddingHorizontal: 16,
-      backgroundColor: box.background.middle, // 你可以接收 props 或用主题
-    },
-  });
-
-  const TabBarLayoutBar = (event: LayoutChangeEvent) => {
-    const { y } = event.nativeEvent.layout;
-    BaseTop.current = y;
-  };
+  console.log(children);
 
   const len = useDerivedValue(() => {
     return tabs.length;
@@ -170,13 +146,9 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
     nativeScroll
   );
 
-  const loading = useMemo(() => {
-    return contentLists.reduce((acc, cur) => acc + cur.length, 0) === 0
-  }, [contentLists])
-
   useImperativeHandle(ref, () => {
     return {
-      BaseTop, scrollRef
+      scrollRef
     };
   }, []);
 
@@ -189,16 +161,7 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
         scrollEventThrottle={16}
         removeClippedSubviews={false}
         ListHeaderComponent={
-          <>
-            <ProfileHeader pullOffset={pullOffset} profile={profile} />
-            <TabBar
-              position="relative"
-              onTabChange={onTabChange}
-              tabs={tabs}
-              onLayout={TabBarLayoutBar}
-              scrollX={horizontalScrollX}
-            />
-          </>
+          children[0]
         }
         renderItem={() => (
           <Animated.ScrollView
@@ -211,32 +174,7 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
             {
               loading ?
                 <LoadingPlaceholder visible={loading} timeout={1000 * 30} />
-                : (contentLists.map((list, idx) => (
-                  <View key={idx} style={{ width: screenWidth }}>
-                    <FlatList
-                      data={list}
-                      keyExtractor={(item) => item.id.toString()}
-                      removeClippedSubviews={false}
-                      renderItem={({ item }: { item: playListItem | djItem }) => {
-                        const imageUrl = (item as playListItem).coverImgUrl ?? (item as djItem).picUrl;
-                        const songNumber = (item as playListItem).trackCount ?? (item as djItem).programCount;
-                        const playOrStartNumber = (item as djItem).subCount ?? (item as playListItem).playCount;
-                        return (
-                          <View style={styles.list}>
-                            <PlaylistItem
-                              type={(item as djItem).dj ? 'dj' : 'song'}
-                              image={convertHttpToHttps(imageUrl)}
-                              title={item.name}
-                              count={songNumber}
-                              plays={playOrStartNumber}
-                              onPress={() => console.log("Playlist pressed:", item.name)}
-                            />
-                          </View>
-                        );
-                      }}
-                    />
-                  </View>
-                )))
+                : children[1]
             }
 
           </Animated.ScrollView>

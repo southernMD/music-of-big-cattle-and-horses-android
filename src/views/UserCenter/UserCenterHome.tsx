@@ -10,6 +10,7 @@ import {
     FlatList,
     Dimensions,
     InteractionManager,
+    Text,
 } from "react-native";
 import { useBasicApi, useUserCenter } from "@/store/index";
 import { useSharedValue, useAnimatedStyle } from "react-native-reanimated";
@@ -20,9 +21,14 @@ import { useLoadingModal } from "@/context/LoadingModalContext";
 import { playListItem } from "@/types/api/playListItem";
 import { djItem } from "@/types/api/djItem";
 import { useThrottleCallback } from "@/hooks/useThrottleCallback";
-import LevelScrollView, { LevelScrollViewRef } from "@/components/LevelScrollView";
+import LevelScrollView, { LevelScrollViewRef } from "@/components/StickBarScrollingFlatList/LevelScrollView";
 import { AnimatedOrRegular } from "@/utils/AnimatedOrRegular";
 import { useFullScreenImage } from "@/context/imgFullPreviewContext";
+import ProfileHeader from "@/components/UserCenter/ProfileHeader";
+import { convertHttpToHttps } from "@/utils/fixHttp";
+import PlaylistItem from "@/components/PlaylistItem";
+import { useTheme } from "@/hooks/useTheme";
+import StickBarScrollingFlatList from "@/components/StickBarScrollingFlatList/StickBarScrollingFlatList";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -31,28 +37,16 @@ const UserCenterHome: React.FC = () => {
     const { uid } = route.params;
     const scrollY = useSharedValue(0);
     const pullOffset = useSharedValue(0);
-    const HEADER_BAR_HEIGHT = 56;
-    const horizontalScrollX = useSharedValue(0);
-    const translateY = useSharedValue(0);
     const Scrolling = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const { y } = event.nativeEvent.contentOffset;
         scrollY.value = y;
         useUserCenter.scrollY = y <= 80 ? y : 80;
-        translateY.value = levelScrollViewRef.current!.BaseTop.current - y <= HEADER_BAR_HEIGHT ? HEADER_BAR_HEIGHT : 0;
     };
     const tabs = useMemo(() => [
         { key: "music", name: "音乐" },
         { key: "broadcast", name: "播客" },
         { key: "start", name: "收藏" },
     ], []);
-
-    const throttledTabChange = useThrottleCallback((key: string) => {
-        const index = tabs.findIndex(tab => tab.key === key);
-        if (index !== -1) {
-            levelScrollViewRef.current?.scrollRef.current?.scrollTo({ x: index * screenWidth, animated: true });
-            horizontalScrollX.value = index * screenWidth;
-        }
-    }, 200);
 
     const [finialProfile, setFinialProfile] = useState<userProfile | null>(null);
     const { showLoadingModal } = useLoadingModal();
@@ -87,47 +81,60 @@ const UserCenterHome: React.FC = () => {
     }, []);
 
     const contentLists = useMemo(() => [userPlayList, userCreateDj, userStartPlayList], [userPlayList, userCreateDj, userStartPlayList]);
-    const levelScrollViewRef = useRef<LevelScrollViewRef>(null)
+    const loading = useMemo(() => {
+        return contentLists.reduce((acc, cur) => acc + cur.length, 0) === 0
+    }, [contentLists])
 
-    const tabBarAnimatedStyle = useAnimatedStyle(() => ({
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 10,
-        opacity: translateY.value === 0 ? 0 : 1,
-        transform: [{ translateY: translateY.value }],
-    }));
-    const { isVisible } = useFullScreenImage();
-
+    const { box } = useTheme();
+    const styles = StyleSheet.create({
+        list: {
+            paddingHorizontal: 16,
+            backgroundColor: box.background.middle, // 你可以接收 props 或用主题
+        },
+    });
 
     return (
-        <View>
-            <AnimatedOrRegular
-                isAnimated={!isVisible}
-                component={View}
-                animatedStyle={tabBarAnimatedStyle}>
-                <TabBar
-                    position="absolute"
-                    onTabChange={throttledTabChange}
-                    tabs={tabs}
-                    scrollX={horizontalScrollX}
-                />
-            </AnimatedOrRegular>
+        <StickBarScrollingFlatList
+            Scrolling={Scrolling}
+            tabs={tabs}
+            loading={loading}
+            children={{
+                HeaderBar: null,
+                HeaderContent: <ProfileHeader pullOffset={pullOffset} profile={finialProfile} />,
+                FlatListContent: <>
+                    {
+                        (contentLists.map((list, idx) => (
+                            <View key={idx} style={{ width: screenWidth }}>
+                                <FlatList
+                                    data={list}
+                                    keyExtractor={(item) => item.id.toString()}
+                                    removeClippedSubviews={false}
+                                    renderItem={({ item }: { item: playListItem | djItem }) => {
+                                        const imageUrl = (item as playListItem).coverImgUrl ?? (item as djItem).picUrl;
+                                        const songNumber = (item as playListItem).trackCount ?? (item as djItem).programCount;
+                                        const playOrStartNumber = (item as djItem).subCount ?? (item as playListItem).playCount;
+                                        return (
+                                            <View style={styles.list}>
+                                                <PlaylistItem
+                                                    type={(item as djItem).dj ? 'dj' : 'song'}
+                                                    image={convertHttpToHttps(imageUrl)}
+                                                    title={item.name}
+                                                    count={songNumber}
+                                                    plays={playOrStartNumber}
+                                                    onPress={() => console.log("Playlist pressed:", item.name)}
+                                                />
+                                            </View>
+                                        );
+                                    }}
+                                />
+                            </View>
+                        )))
+                    }
 
-
-            <LevelScrollView
-                Scrolling={Scrolling}
-                tabs={tabs}
-                scrollY={scrollY}
-                pullOffset={pullOffset}
-                profile={finialProfile}
-                contentLists={contentLists}
-                onTabChange={throttledTabChange}
-                ref={levelScrollViewRef}
-                horizontalScrollX={horizontalScrollX}
-            />
-        </View>
+                </>
+            }}
+        >
+        </StickBarScrollingFlatList>
     );
 };
 
