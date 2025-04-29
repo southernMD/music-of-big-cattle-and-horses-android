@@ -8,7 +8,7 @@ import {
   NativeScrollEvent,
   LayoutChangeEvent,
 } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { Gesture, GestureDetector, PanGesture } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedRef,
   useSharedValue,
@@ -32,21 +32,21 @@ export interface LevelScrollViewRef {
 interface Props {
   tabs?: { key: string; name: string }[];
   scrollY: SharedValue<number>;
-  pullOffset: SharedValue<number>;
   loading: boolean
   Scrolling: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   horizontalScrollX: SharedValue<number>
   children: [React.ReactElement,React.ReactElement];
+  panGesture?:PanGesture
 }
 
 const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
   children,
   tabs,
   scrollY,
-  pullOffset,
   loading,
   Scrolling,
-  horizontalScrollX
+  horizontalScrollX,
+  panGesture
 }, ref) => {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   console.log(children);
@@ -59,15 +59,6 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
   const startY = useSharedValue(0);
   const isHorizontal = useSharedValue(true);
 
-  const panGesture = Gesture.Pan()
-    .onUpdate((e) => {
-      if (scrollY.value <= 0 && e.translationY > 0) {
-        pullOffset.value = e.translationY;
-      }
-    })
-    .onEnd(() => {
-      pullOffset.value = withSpring(0, { stiffness: 150, damping: 20 });
-    });
 
   const directionalPanGesture = Gesture.Pan()
     .manualActivation(true)
@@ -142,7 +133,7 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
   })
   const finialGesture = Gesture.Simultaneous(
     directionalPanGesture,
-    panGesture,
+    panGesture || Gesture.Manual(),
     nativeScroll
   );
 

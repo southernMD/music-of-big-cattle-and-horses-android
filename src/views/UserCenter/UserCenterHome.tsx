@@ -13,7 +13,7 @@ import {
     Text,
 } from "react-native";
 import { useBasicApi, useUserCenter } from "@/store/index";
-import { useSharedValue, useAnimatedStyle } from "react-native-reanimated";
+import { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import TabBar from "@/components/UserCenter/TabBar";
 import { userProfile } from "@/types/user/user";
 import { getDetail, userDj, userPlaylist } from "@/api";
@@ -29,6 +29,7 @@ import { convertHttpToHttps } from "@/utils/fixHttp";
 import PlaylistItem from "@/components/PlaylistItem";
 import { useTheme } from "@/hooks/useTheme";
 import StickBarScrollingFlatList from "@/components/StickBarScrollingFlatList/StickBarScrollingFlatList";
+import { Gesture } from "react-native-gesture-handler";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -93,11 +94,22 @@ const UserCenterHome: React.FC = () => {
         },
     });
 
+    const panGesture = Gesture.Pan()
+    .onUpdate((e) => {
+        if (scrollY.value <= 0 && e.translationY > 0) {
+        pullOffset.value = e.translationY;
+        }
+    })
+    .onEnd(() => {
+        pullOffset.value = withSpring(0, { stiffness: 150, damping: 20 });
+    });
+
     return (
         <StickBarScrollingFlatList
             Scrolling={Scrolling}
             tabs={tabs}
             loading={loading}
+            panGesture={panGesture}
             children={{
                 HeaderBar: null,
                 HeaderContent: <ProfileHeader pullOffset={pullOffset} profile={finialProfile} />,

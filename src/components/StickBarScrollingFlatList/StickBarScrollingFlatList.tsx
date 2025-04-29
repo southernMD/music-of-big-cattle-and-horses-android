@@ -12,6 +12,7 @@ import { useThrottleCallback } from "@/hooks/useThrottleCallback";
 import LevelScrollView, { LevelScrollViewRef } from "@/components/StickBarScrollingFlatList/LevelScrollView";
 import { AnimatedOrRegular } from "@/utils/AnimatedOrRegular";
 import { useFullScreenImage } from "@/context/imgFullPreviewContext";
+import { PanGesture } from "react-native-gesture-handler";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -24,10 +25,10 @@ interface Props {
     tabs?: { key: string; name: string }[];
     Scrolling?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
     loading: boolean
+    panGesture?:PanGesture
 }
-const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling, loading }) => {
+const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling, loading,panGesture }) => {
     const scrollY = useSharedValue(0);
-    const pullOffset = useSharedValue(0);
     const horizontalScrollX = useSharedValue(0);
     const translateY = useSharedValue(0);
 
@@ -76,6 +77,7 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
         const { y } = event.nativeEvent.contentOffset;
         translateY.value = BaseTop.current - y <= HEADER_BAR_HEIGHT ? HEADER_BAR_HEIGHT : 0;
     }
+
     return (
         <View>
             <AnimatedOrRegular
@@ -94,10 +96,10 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
                 Scrolling={ScrollingUserCenter}
                 tabs={tabs}
                 scrollY={scrollY}
-                pullOffset={pullOffset}
                 loading={loading}
                 ref={levelScrollViewRef}
                 horizontalScrollX={horizontalScrollX}
+                panGesture={panGesture}
             >
                 <>
                     {children.HeaderContent}
