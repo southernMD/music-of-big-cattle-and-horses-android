@@ -113,10 +113,13 @@ const UserCenterHome: React.FC = () => {
                                         const imageUrl = (item as playListItem).coverImgUrl ?? (item as djItem).picUrl;
                                         const songNumber = (item as playListItem).trackCount ?? (item as djItem).programCount;
                                         const playOrStartNumber = (item as djItem).subCount ?? (item as playListItem).playCount;
+                                        const createId = (item as djItem).dj ? (item as djItem).dj.userId : (item as playListItem).creator.userId;
                                         return (
                                             <View style={styles.list}>
                                                 <PlaylistItem
-                                                    type={(item as djItem).dj ? 'dj' : 'song'}
+                                                    createId={createId}
+                                                    id={item.id}
+                                                    type={(item as djItem).dj ? 'dj' : 'Album'}
                                                     image={convertHttpToHttps(imageUrl)}
                                                     title={item.name}
                                                     count={songNumber}

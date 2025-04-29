@@ -58,6 +58,9 @@ export interface ExtendedTheme extends Theme{
   box: {
     background: BoxBackground;
   };
+  boxReflect:{
+    background: BoxBackground;
+  }
   line: LineColors;
   interaction: {
     pressBackground: string;
@@ -131,6 +134,13 @@ export const Light: ExtendedTheme = {
       deep:'rgba(225, 225, 225, 1)'
     }
   },
+  boxReflect:{
+    background:{
+      shallow:'rgba(28, 28, 30, 0.1)',
+      middle:'rgba(22, 22, 24, 0.1)',
+      deep:'rgba(18, 18, 20, 0.1)'
+    }
+  },
   line: {
     light: 'rgba(216, 216, 216, 1)',  // 浅色线
     dark: 'rgba(180, 180, 180, 1)'     // 深色线
@@ -199,6 +209,13 @@ export const Dark: ExtendedTheme = {
       shallow:'rgba(28, 28, 30, 1)',
       middle:'rgba(22, 22, 24, 1)',
       deep:'rgba(18, 18, 20, 1)'
+    }
+  },
+  boxReflect:{
+    background: {
+      shallow:'rgba(255, 255, 255, 0.1)',
+      middle:'rgba(242, 242, 247, 0.1)',
+      deep:'rgba(225, 225, 225, 0.1)'
     }
   },
   line: {

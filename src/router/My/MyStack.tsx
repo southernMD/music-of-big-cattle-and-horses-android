@@ -8,8 +8,7 @@ import { useTheme } from "@/hooks/useTheme";
 const Stack = createNativeStackNavigator<MyStackParamList>();
 
 export const MyStack = () => {
-  const { box, typography } = useTheme();
-
+  const { box } = useTheme();
 
   return (
     <Stack.Navigator>

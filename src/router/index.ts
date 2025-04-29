@@ -7,6 +7,7 @@ import { myTabConfig } from "./My/MyTap";
 import { SettingStack, } from "./Setting/SettingStack";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { UserCenterStack } from "./UserCenter/UserCenterStack";
+import { PlayListDetailStack } from "./PlayListDetail/PlayListDetailStack";
 
 const Tab = createBottomTabNavigator<RootTabParamList>({
   screenOptions: {
@@ -29,6 +30,7 @@ const RootStack = createNativeStackNavigator<RootStackParamList>({
     },
     Setting: SettingStack,
     UserCenter: UserCenterStack,
+    PlayListDetail:PlayListDetailStack
   },
   screenOptions: {
     headerShown: false, // 隐藏 Tab 页的默认顶部栏（因为每个 Stack 有自己的头部）

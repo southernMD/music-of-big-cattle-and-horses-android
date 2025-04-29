@@ -21,8 +21,8 @@ interface Props {
         HeaderContent:React.ReactElement,
         FlatListContent:React.ReactElement
     };
-    tabs: { key: string; name: string }[];
-    Scrolling: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+    tabs?: { key: string; name: string }[];
+    Scrolling?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
     loading: boolean
 }
 const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling, loading }) => {
@@ -32,7 +32,7 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
     const translateY = useSharedValue(0);
 
     const throttledTabChange = useThrottleCallback((key: string) => {
-        const index = tabs.findIndex(tab => tab.key === key);
+        const index = tabs!.findIndex(tab => tab.key === key);
         if (index !== -1) {
             levelScrollViewRef.current?.scrollRef.current?.scrollTo({ x: index * screenWidth, animated: true });
             horizontalScrollX.value = index * screenWidth;
@@ -54,8 +54,9 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
     const TabBarLayoutBar = (event: LayoutChangeEvent) => {
         const { y } = event.nativeEvent.layout;
         BaseTop.current = y;
+        console.log('？？？？？？？');
     };
-
+    
 
     const StickElementTop = useCallback(() => {
         return children.HeaderBar ? cloneElement(children.HeaderBar, {
@@ -65,13 +66,13 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
 
     const StickElement = useCallback(() => {
         return children.HeaderBar ? cloneElement(children.HeaderBar, {
-            position: "relative"
+            position: "relative",
         }) : null
     }, [children.HeaderBar])
     const HEADER_BAR_HEIGHT = 56;
 
     const ScrollingUserCenter = (event: NativeSyntheticEvent<NativeScrollEvent>)=>{
-        Scrolling(event)
+        if(Scrolling)Scrolling(event)
         const { y } = event.nativeEvent.contentOffset;
         translateY.value = BaseTop.current - y <= HEADER_BAR_HEIGHT ? HEADER_BAR_HEIGHT : 0;
     }
@@ -86,7 +87,7 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
                     onTabChange={throttledTabChange}
                     tabs={tabs}
                     scrollX={horizontalScrollX}
-                /> : StickElementTop}
+                /> : StickElementTop()}
             </AnimatedOrRegular>
 
             <LevelScrollView
@@ -106,7 +107,7 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
                         tabs={tabs}
                         onLayout={TabBarLayoutBar}
                         scrollX={horizontalScrollX}
-                    /> : StickElement}
+                    /> : <View onLayout={TabBarLayoutBar}>{StickElement()}</View>}
                 </>
                 <>
                     {children.FlatListContent}

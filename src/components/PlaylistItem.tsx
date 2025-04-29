@@ -1,11 +1,15 @@
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { MoveVertical as MoreVertical } from 'lucide-react-native';
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { Icon } from "@ant-design/react-native";
 import FastImage from 'react-native-fast-image'
+import { useNavigation } from '@react-navigation/native';
+import { RootStackNavigationProps } from '@/types/NavigationType';
 interface PlaylistItemProps {
-  type:'song' | 'dj'
+  type: 'Album' | 'dj'
+  id: number;
+  createId: number;
   image: string;
   title: string;
   count: number;
@@ -13,8 +17,9 @@ interface PlaylistItemProps {
   onPress?: () => void;
 }
 
-function PlaylistItem({ image,type, title, count, plays, onPress }: PlaylistItemProps) {
+function PlaylistItem({ createId,id,image, type, title, count, plays, onPress }: PlaylistItemProps) {
   const { box, typography } = useTheme()
+  const navigation = useNavigation<RootStackNavigationProps>();
   const styles = StyleSheet.create({
     container: {
       flexDirection: 'row',
@@ -45,15 +50,27 @@ function PlaylistItem({ image,type, title, count, plays, onPress }: PlaylistItem
       padding: 8,
     },
   });
+  const MyPress = useCallback(() => {
+    if (onPress) onPress()
+    navigation.navigate('PlayListDetail', {
+      screen: 'PlayListDetail',
+      params: {
+        id,
+        createId,
+        type,
+        name:title
+      }
+    })
+  }, [onPress])
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress}>
+    <TouchableOpacity style={styles.container} onPress={MyPress}>
       <FastImage
         source={{ uri: image }}
         style={styles.image}
       />
       <View style={styles.content}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{count}首 · {plays}{type==='song'?'次播放':'次收藏'}</Text>
+        <Text style={styles.subtitle}>{count}首 · {plays}{type === 'Album' ? '次播放' : '次收藏'}</Text>
       </View>
       <TouchableOpacity style={styles.moreButton}>
         <Icon name="more" size={20} color={typography.colors.medium.default} />

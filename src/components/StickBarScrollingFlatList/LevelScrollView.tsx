@@ -30,7 +30,7 @@ export interface LevelScrollViewRef {
 }
 // useAnimatedRef<Animated.ScrollView>
 interface Props {
-  tabs: { key: string; name: string }[];
+  tabs?: { key: string; name: string }[];
   scrollY: SharedValue<number>;
   pullOffset: SharedValue<number>;
   loading: boolean
@@ -52,7 +52,7 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
   console.log(children);
 
   const len = useDerivedValue(() => {
-    return tabs.length;
+    return tabs?.length ?? 0
   }, [tabs]);
 
   const startX = useSharedValue(0);

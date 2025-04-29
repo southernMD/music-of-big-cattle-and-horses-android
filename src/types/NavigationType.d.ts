@@ -39,6 +39,14 @@ export type UserCenterStackParamList = {
     }
 };
 
+export type PlayListDetailStackParamList = {
+    PlayListDetail: {
+        id: number;
+        createId:number;
+        name:string;
+        type:'dj' | 'Album'
+    };
+}
 
 // 定义 Bottom Tab Navigator 的参数类型
 export type RootTabParamList = {
@@ -56,6 +64,10 @@ export type RootStackParamList = {
         screen: keyof UserCenterStackParamList; // 嵌套导航的屏幕名称
         params: UserCenterStackParamList['UserCenterHome']; // 对应子屏幕的参数类型
     };
+    PlayListDetail:{
+        screen: keyof PlayListDetailStackParamList;
+        params: PlayListDetailStackParamList['PlayListDetail'];
+    }
 };
 
 // 全局导航属性类型
