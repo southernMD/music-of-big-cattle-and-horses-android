@@ -1,25 +1,33 @@
-import { View, Text, Image, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Pressable, Dimensions } from 'react-native';
 import { Share2, MessageSquare, Plus } from 'lucide-react-native';
 import { useFullScreenImage } from '@/context/imgFullPreviewContext';
 import { useTheme } from '@/hooks/useTheme';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { userProfile } from '@/types/user/user';
+import { convertHttpToHttps } from '@/utils/fixHttp';
+import FastImage from 'react-native-fast-image';
+import { useSnapshot } from 'valtio';
+import { useBasicApi } from '@/store';
+import { Playlist } from '@/types/PlayList';
 
 interface PlaylistHeaderProps {
-    image: string;
-    title: string;
-    author: string;
-    playCount: number;
-    description?: string;
+    playlistDetailMsg: Playlist
 }
-
-export function PlaylistHeader({ image, title, author, playCount, description }: PlaylistHeaderProps) {
+const { width } = Dimensions.get('screen');
+export function PlaylistHeader({ playlistDetailMsg }: PlaylistHeaderProps) {
     const { showFullScreenImage, isVisible } = useFullScreenImage();
     const { typography, box, borderRadius,line } = useTheme()
+    const { profile } = useSnapshot(useBasicApi)
     const pressHandler = (url: string) => {
         showFullScreenImage(url)
     };
-    const [startFlag, setStartFlag] = useState(false)
-
+    const startFlag = useMemo(()=>{
+        return Boolean(playlistDetailMsg.subscribed)
+    },[playlistDetailMsg.subscribed])
+    const image = useMemo(()=>convertHttpToHttps(playlistDetailMsg.coverImgUrl),[playlistDetailMsg.coverImgUrl])
+    const isMyCreate = useMemo(()=>{
+        return profile?.userId == playlistDetailMsg.creator.userId
+    },[profile,playlistDetailMsg.creator.userId])
     const styles = StyleSheet.create({
         container: {
             padding: 20,
@@ -32,13 +40,13 @@ export function PlaylistHeader({ image, title, author, playCount, description }:
             marginBottom: 16,
         },
         coverImage: {
-            width: 150,
-            height: 150,
+            width: width * 0.35,
+            height: width * 0.35,
             borderRadius: 8,
             marginRight: 16,
         },
         info: {
-            // marginBottom: 20,
+            width: width * 0.5,
         },
         title: {
             fontSize: 24,
@@ -112,7 +120,7 @@ export function PlaylistHeader({ image, title, author, playCount, description }:
             fontSize: 12,
         },
         actionTextStart:{
-            color: startFlag?typography.colors.large.disabled:typography.colors.large.default,
+            color: startFlag || isMyCreate?typography.colors.large.disabled:typography.colors.large.default,
         }
     });
 
@@ -121,38 +129,42 @@ export function PlaylistHeader({ image, title, author, playCount, description }:
     const toggleExpand = () => {
         setIsExpanded(!isExpanded); // 切换状态
     };
-
+    console.log(playlistDetailMsg.subscribed);
     return (
         <View style={styles.container}>
             <View style={styles.details}>
                 <Pressable onPress={() => pressHandler(image)}>
-                    <Image source={{ uri: image }} style={styles.coverImage} />
+                    <FastImage source={{ uri: image }} style={styles.coverImage} />
                 </Pressable>
 
                 <View style={styles.info}>
-                    <Text style={styles.title}>{title}</Text>
-                    <View style={styles.tags}>
-                        <Text style={styles.tag}>流行</Text>
-                        <Text style={styles.tag}>流行</Text>
-                        <Text style={styles.tag}>流行</Text>
-                    </View>
+                    <Text style={styles.title} numberOfLines={2}>{playlistDetailMsg.name}</Text>
+                    {playlistDetailMsg.tags?.length == 0 ?null:
+                        <View style={styles.tags}>
+                            {playlistDetailMsg.tags?.map((tag, index) => {
+                                return (
+                                    <Text style={styles.tag}>{tag}</Text>
+                                )
+                            })}
+                        </View>
+                    }
                     <View style={styles.authorRow}>
-                        <Image
-                            source={{ uri: 'https://images.pexels.com/photos/1535713/pexels-photo-1535713.jpeg' }}
+                        <FastImage
+                            source={{ uri: convertHttpToHttps(playlistDetailMsg.creator.avatarUrl) }}
                             style={styles.avatar}
                         />
 
-                        <Text style={styles.author}>{author}</Text>
-                        <Text style={styles.playCount}>{playCount}次播放</Text>
+                        <Text style={styles.author}>{playlistDetailMsg.creator.nickname}</Text>
+                        <Text style={styles.playCount}>{playlistDetailMsg.playCount}次播放</Text>
                     </View>
 
                     <TouchableOpacity onPress={toggleExpand} style={styles.descriptionContainer}>
                         <Text
                             style={styles.description}
-                            numberOfLines={isExpanded ? undefined : 1} // 展开时取消行数限制
-                            ellipsizeMode={isExpanded ? undefined : "tail"} // 展开时取消省略号
+                            numberOfLines={isExpanded ? undefined : 1} 
+                            ellipsizeMode={isExpanded ? undefined : "tail"}
                         >
-                            这是一个很长的描述文本，默认显示一行，点击后展开显示全部内容。
+                            {playlistDetailMsg.description}
                         </Text>
                         {!isExpanded && <Text style={styles.chevron}>›</Text>}
                     </TouchableOpacity>
@@ -168,9 +180,9 @@ export function PlaylistHeader({ image, title, author, playCount, description }:
                     <MessageSquare color={typography.colors.large.default} size={24} />
                     <Text style={styles.actionText}>评论</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton} disabled={startFlag}>
-                    <Plus color={startFlag?typography.colors.large.disabled:typography.colors.large.default} size={24} />
-                    <Text style={[styles.actionText,styles.actionTextStart]}>{startFlag?'已':''}收藏</Text>
+                <TouchableOpacity style={styles.actionButton} disabled={isMyCreate}>
+                    <Plus color={startFlag || isMyCreate?typography.colors.large.disabled:typography.colors.large.default} size={24} />
+                    <Text style={[styles.actionText,styles.actionTextStart]}>{startFlag && !isMyCreate ?'已':''}收藏</Text>
                 </TouchableOpacity>
             </View>
         </View>

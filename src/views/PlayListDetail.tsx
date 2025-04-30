@@ -3,7 +3,9 @@ import { PlaylistHeader } from '@/components/PlayListDetail/PlayListHeader';
 import { SongList } from '@/components/PlayListDetail/SongList';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { PlayListDetailStackParamList } from '@/types/NavigationType';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { playlistDetail } from '@/api';
+import { Playlist } from '@/types/PlayList';
 
 const mockSongs = [
     {
@@ -58,35 +60,35 @@ const mockSongs = [
         album: 'てる',
         cover: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg',
         quality: '超清母带',
-    },{
+    }, {
         id: '9',
         title: 'Poetry',
         artist: 'GOMESS',
         album: 'てる',
         cover: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg',
         quality: '超清母带',
-    },{
+    }, {
         id: '10',
         title: 'Poetry',
         artist: 'GOMESS',
         album: 'てる',
         cover: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg',
         quality: '超清母带',
-    },{
+    }, {
         id: '11',
         title: 'Poetry',
         artist: 'GOMESS',
         album: 'てる',
         cover: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg',
         quality: '超清母带',
-    },{
+    }, {
         id: '12',
         title: 'Poetry',
         artist: 'GOMESS',
         album: 'てる',
         cover: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg',
         quality: '超清母带',
-    },{
+    }, {
         id: '13',
         title: 'Poetry',
         artist: 'GOMESS',
@@ -99,11 +101,23 @@ const mockSongs = [
 export default function PlayListDetail() {
     const route = useRoute<RouteProp<PlayListDetailStackParamList>>();
     const { id, name, type, createId } = useMemo(() => route.params, [route.params]);
+    const [playListSongs, setPlayListSongs] = useState<Playlist['tracks']>([])
+    const [playlistDetailMsg, setPlayListDetailMsg] = useState<Playlist>()
+    useEffect(() => {
+        playlistDetail(id).then((res) => {
+            setPlayListSongs(res.playlist.tracks)
+            setPlayListDetailMsg(res.playlist)
+        })
+    },[])
     return (
-        <SongList
-            songs={mockSongs}
-            onSongPress={(song) => console.log('Pressed song:', song.title)}
-        />
+        <>
+            {playlistDetailMsg ?
+                <SongList
+                    playlistDetailMsg={playlistDetailMsg}
+                    songs={playListSongs}
+                    onSongPress={(song) => console.log('Pressed song:', song.name)}></SongList>
+                : ''}
+        </>
     );
 }
 

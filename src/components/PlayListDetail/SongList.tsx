@@ -6,23 +6,20 @@ import { FlatList } from 'react-native-gesture-handler';
 import { useTheme } from '@/hooks/useTheme';
 import { Icon } from '@ant-design/react-native';
 import { usePersistentStore } from '@/hooks/usePersistentStore';
+import { Playlist } from '@/types/PlayList';
+import { convertHttpToHttps } from '@/utils/fixHttp';
+import { SongSimple } from '@/types/Song';
+import FastImage from 'react-native-fast-image';
 
-interface Song {
-    id: string;
-    title: string;
-    artist: string;
-    album?: string;
-    cover: string;
-    quality?: string;
-}
 
 interface SongListProps {
-    songs: Song[];
-    onSongPress?: (song: Song) => void;
+    songs: SongSimple[];
+    onSongPress?: (song: SongSimple) => void;
+    playlistDetailMsg:Playlist
 }
 const screenWidth = Dimensions.get("window").width;
 
-export function SongList({ songs, onSongPress }: SongListProps) {
+export function SongList({ songs, onSongPress,playlistDetailMsg }: SongListProps) {
     const { box, typography, boxReflect } = useTheme()
     const primaryColor = usePersistentStore<string>('primaryColor');
 
@@ -105,16 +102,16 @@ export function SongList({ songs, onSongPress }: SongListProps) {
             alignItems: 'center',
             gap: 8,
         },
-        qualityBadge: {
-            backgroundColor: boxReflect.background.shallow,
-            paddingHorizontal: 6,
-            paddingVertical: 2,
-            borderRadius: 4,
-        },
-        qualityText: {
-            color: primaryColor,
-            fontSize: 12,
-        },
+        // qualityBadge: {
+        //     backgroundColor: boxReflect.background.shallow,
+        //     paddingHorizontal: 6,
+        //     paddingVertical: 2,
+        //     borderRadius: 4,
+        // },
+        // qualityText: {
+        //     color: primaryColor,
+        //     fontSize: 12,
+        // },
         artistText: {
             color: typography.colors.small.default,
             fontSize: typography.sizes.small,
@@ -151,11 +148,7 @@ export function SongList({ songs, onSongPress }: SongListProps) {
                 </>,
                 HeaderContent:
                     <PlaylistHeader
-                        image="https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg"
-                        title="nicorap netrap"
-                        author="南山有壶酒"
-                        playCount={288}
-                        description="日语rap"
+                        playlistDetailMsg={playlistDetailMsg}
                     />,
                 FlatListContent: <>
                     <FlatList
@@ -171,17 +164,25 @@ export function SongList({ songs, onSongPress }: SongListProps) {
                                     onPress={() => onSongPress?.(item)}
                                 >
                                     <Text style={styles.songIndex}>{(index + 1).toString().padStart(2, '0')}</Text>
-                                    <Image source={{ uri: item.cover }} style={styles.songCover} />
+                                    <FastImage source={{ uri: convertHttpToHttps(item.al.picUrl) }} style={styles.songCover} />
                                     <View style={styles.songInfo}>
-                                        <Text style={styles.songTitle}>{item.title}</Text>
+                                        <Text 
+                                            style={styles.songTitle}
+                                            numberOfLines={1}
+                                            ellipsizeMode='tail'
+                                        >{item.name}</Text>
                                         <View style={styles.songDetails}>
-                                            {item.quality && (
+                                            {/* {item.quality && (
                                                 <View style={styles.qualityBadge}>
                                                     <Text style={styles.qualityText}>{item.quality}</Text>
                                                 </View>
-                                            )}
-                                            <Text style={styles.artistText}>
-                                                {item.artist}{item.album ? ` - ${item.album}` : ''}
+                                            )} */}
+                                            <Text 
+                                                style={styles.artistText}
+                                                numberOfLines={1}
+                                                ellipsizeMode='tail'
+                                            >
+                                                {item.ar.flatMap(item=>item.name).join("/")+ ' - ' + item.al.name}
                                             </Text>
                                         </View>
                                     </View>

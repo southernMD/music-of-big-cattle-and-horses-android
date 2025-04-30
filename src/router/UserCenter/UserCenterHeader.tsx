@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image, DeviceEventEmitter } from "react-native";
+import { View, Text, StyleSheet, Image, DeviceEventEmitter, Dimensions } from "react-native";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { UserCenterStackParamList } from "@/types/NavigationType";
 import { useBasicApi, useUserCenter } from '@/store'
@@ -6,7 +6,9 @@ import { useSnapshot } from "valtio";
 import { Icon } from "@ant-design/react-native";
 import { useEffect, useMemo, useState } from "react";
 import { subscribeKey } from "valtio/utils";
+import FastImage from "react-native-fast-image";
 
+const { width } = Dimensions.get('screen')
 export const CustomHeaderTitle = ({ title }: { title: string }) => {
     const { profile } = useSnapshot(useBasicApi)
     const route = useRoute<RouteProp<UserCenterStackParamList>>();
@@ -22,7 +24,7 @@ export const CustomHeaderTitle = ({ title }: { title: string }) => {
     return (
         <View style={styles.centerContent}>
             <View style={styles.left}>
-                <Image
+                <FastImage
                     source={{ uri: avatarUrl || '默认头像URL' }}
                     style={styles.avatar}
                 />
@@ -41,7 +43,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between', // 左右两侧和中间内容均匀分布
-        width: '80%', // 占满整个宽度
+        width: width * 0.75, // 占满整个宽度
     },
     avatar: {
         width: 32,

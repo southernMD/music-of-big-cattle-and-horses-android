@@ -55,10 +55,8 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
     const TabBarLayoutBar = (event: LayoutChangeEvent) => {
         const { y } = event.nativeEvent.layout;
         BaseTop.current = y;
-        console.log('？？？？？？？');
     };
     
-
     const StickElementTop = useCallback(() => {
         return children.HeaderBar ? cloneElement(children.HeaderBar, {
             position: "absolute"

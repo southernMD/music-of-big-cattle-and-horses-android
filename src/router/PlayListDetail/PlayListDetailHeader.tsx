@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image, DeviceEventEmitter } from "react-native";
+import { View, Text, StyleSheet, Image, DeviceEventEmitter, Dimensions } from "react-native";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { PlayListDetailStackParamList } from "@/types/NavigationType";
 import { useBasicApi, useUserCenter } from '@/store'
@@ -7,6 +7,7 @@ import { Icon } from "@ant-design/react-native";
 import { useEffect, useMemo, useState } from "react";
 import { subscribeKey } from "valtio/utils";
 import { useTheme } from "@/hooks/useTheme";
+const { width } = Dimensions.get('screen')
 
 export const PlayListDetailHeader = () => {
     const { profile } = useSnapshot(useBasicApi)
@@ -22,10 +23,10 @@ export const PlayListDetailHeader = () => {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between', // 左右两侧和中间内容均匀分布
-            width: '100%', 
+            width: width * 0.75, 
         },
         name: {
-            width: '80%',
+            width: 150,
             fontSize: 16,
             fontWeight: 'bold',
             color: typography.colors.medium.default,

@@ -49,7 +49,6 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
   panGesture
 }, ref) => {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
-  console.log(children);
 
   const len = useDerivedValue(() => {
     return tabs?.length ?? 0

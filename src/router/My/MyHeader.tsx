@@ -6,6 +6,7 @@ import { useBasicApi } from '@/store';
 import { useSnapshot } from "valtio";
 import { convertHttpToHttps } from "@/utils/fixHttp";
 import { useTheme } from "@/hooks/useTheme";
+import FastImage from "react-native-fast-image";
 
 export const CustomHeaderTitle = ({ title }: { title: string }) => {
 
@@ -64,7 +65,7 @@ export const CustomHeaderTitle = ({ title }: { title: string }) => {
              }
           })} 
           style={styles.iconPressable}>
-          <Image
+          <FastImage
             source={{
               uri: profile ? convertHttpToHttps(profile.avatarUrl) : 'avatar', // 替换为实际头像 URL
             }}

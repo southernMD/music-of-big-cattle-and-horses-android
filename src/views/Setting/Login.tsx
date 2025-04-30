@@ -14,6 +14,7 @@ import { CommonActions, useFocusEffect, useNavigation } from "@react-navigation/
 import { useCallback, useEffect, useState } from "react";
 import { Alert, AppRegistry, AppState, BackHandler, DeviceEventEmitter, Image, Linking, Modal, NativeModules, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import BackgroundTimer from 'react-native-background-timer';
+import FastImage from "react-native-fast-image";
 import { useSnapshot } from "valtio";
 //orpheuswidget://
 //orpheus://
@@ -263,7 +264,7 @@ export const Login: React.FC = () => {
             <View style={styles.imageContainer}>
                 {codeImg ? (
                     <View>
-                        <Image
+                        <FastImage
                             source={{ uri: codeImg }}
                             style={styles.image}
                         />

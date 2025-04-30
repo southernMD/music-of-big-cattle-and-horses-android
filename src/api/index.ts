@@ -1,6 +1,7 @@
 import { QrCheckType, QrImageType, qrKeyType } from "@/types/api/qr";
 import { customFetch as fetch } from "./init";
 import { LoginUserType, QuitLoginType, UserDetailType, UserDjType, UserPlaylistType } from "@/types/api/user";
+import { PlayListType } from "@/types/api/PlayListType";
 
 export const apiTest = async () => {
    return fetch('/user/playlist?uid=361080509')
@@ -71,4 +72,11 @@ export const userDj = async (uid:number)=>{
     return await fetch<UserDjType>(`/user/audio?uid=${uid}`, {
         method: 'GET'
     });
+}
+
+//获取歌单详情
+export const playlistDetail = async (id:string | number)=>{
+    return await fetch<PlayListType>(`/playlist/detail?id=${id}`, {
+        method: 'GET'
+    })
 }
