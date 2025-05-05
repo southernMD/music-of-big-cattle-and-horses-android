@@ -1,4 +1,4 @@
-export type SongSimple = {
+export type Song = {
     name: string,
     mainTitle: null,
     additionalTitle: null,
@@ -50,13 +50,63 @@ export type SongSimple = {
     cp: number,
     mv: number,
     publishTime: number
-    tns:Array<string>
+    tns: Array<string>
 }
+
+export type SongPrivilege = {
+    id: number,
+    fee: number,
+    payed: number,
+    st: number,
+    pl: SongQualityCode,
+    dl: SongQualityCode,
+    sp: 7,
+    cp: 1,
+    subp: 1,
+    cs: false,
+    maxbr: SongQualityCode,
+    fl: SongQualityCode,
+    toast: false,
+    flag: number,
+    preSell: false,
+    playMaxbr: SongQualityCode,
+    downloadMaxbr: SongQualityCode,
+    maxBrLevel: SongQuality,
+    playMaxBrLevel: SongQuality,
+    downloadMaxBrLevel: SongQuality,
+    plLevel: SongQuality,
+    dlLevel: SongQuality,
+    flLevel: SongQuality,
+    rscl: null,
+    freeTrialPrivilege: {
+        resConsumable: boolean,
+        userConsumable: boolean,
+        listenType: number,
+        cannotListenReason: number,
+        playReason: null,
+        freeLimitTagType: null
+    },
+    rightSource: number,
+    chargeInfoList: Array<{
+        rate: SongQualityCode,
+        chargeUrl: null,
+        chargeMessage: null,
+        chargeType: number
+    }>,
+    code: number,
+    message: null,
+    plLevels: null,
+    dlLevels: null,
+    ignoreCache: null
+}
+
+export type SongQualityCode = 128000 | 192000 | 320000 | 999000
+export type SongQuality = 'standard' | 'higher' | 'exhigh' | 'lossless' | 'hires' | 'jycf'
 
 export type SongArSimple = {
     id: number,
     name: string,
-    tns:Array<string>,
+    tns: Array<string>,
     alias: Array<string>
 }
 

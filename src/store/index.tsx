@@ -1,6 +1,6 @@
 import { proxy } from 'valtio';
 import { Login, getDetail, quitLogin } from '@/api'; // 假设这是你的 API 方法
-import { BaseApiType, UserCenterType, GlobalType } from '@/types/store';
+import { BaseApiType, UserCenterType, GlobalType, useMusicPlayerType } from '@/types/store';
 import { CodeEnum } from '@/constants/network';
 import { deleteCredentials } from '@/utils/keychain';
 // 定义 store
@@ -48,3 +48,14 @@ export const useGlobal = proxy<GlobalType>({
     theme: 'light',
     primaryColor: 'rgba(102, 204, 255,1)'
 },)
+
+export const useMusicPlayer = proxy<useMusicPlayerType>({
+    playingList:[],
+    playingPrivileges:[],
+    playingId:-1,
+    playingIndex:-1,
+    playStatus:'stop',
+    PlayingListId:-1
+    //上一个播放的歌单id(限自己的歌单暂时)，在开始播放后会变成正在播放的歌单
+    //0已下载 -1默认状态 -2本地  -3最近 -4私人FM -5个人排行 -6 top50
+})

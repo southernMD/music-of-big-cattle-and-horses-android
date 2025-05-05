@@ -9,6 +9,7 @@ import FastImage from 'react-native-fast-image';
 import { useSnapshot } from 'valtio';
 import { useBasicApi } from '@/store';
 import { Playlist } from '@/types/PlayList';
+import { HEADER_BAR_HEIGHT } from '@/constants/bar';
 
 interface PlaylistHeaderProps {
     playlistDetailMsg: Playlist
@@ -32,7 +33,7 @@ export function PlaylistHeader({ playlistDetailMsg }: PlaylistHeaderProps) {
         container: {
             padding: 20,
             backgroundColor: box.background.middle,
-            marginTop: 56,
+            marginTop: HEADER_BAR_HEIGHT,
         },
         details: {
             display: 'flex',

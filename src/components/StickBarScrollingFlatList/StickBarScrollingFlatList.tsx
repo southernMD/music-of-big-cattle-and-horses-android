@@ -13,6 +13,7 @@ import LevelScrollView, { LevelScrollViewRef } from "@/components/StickBarScroll
 import { AnimatedOrRegular } from "@/utils/AnimatedOrRegular";
 import { useFullScreenImage } from "@/context/imgFullPreviewContext";
 import { PanGesture } from "react-native-gesture-handler";
+import { HEADER_BAR_HEIGHT } from "@/constants/bar";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -68,7 +69,6 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
             position: "relative",
         }) : null
     }, [children.HeaderBar])
-    const HEADER_BAR_HEIGHT = 56;
 
     const ScrollingUserCenter = (event: NativeSyntheticEvent<NativeScrollEvent>)=>{
         if(Scrolling)Scrolling(event)

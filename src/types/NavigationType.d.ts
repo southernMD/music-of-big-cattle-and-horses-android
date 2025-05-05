@@ -39,15 +39,20 @@ export type UserCenterStackParamList = {
     }
 };
 
+
+
 export type PlayListDetailStackParamList = {
     PlayListDetail: {
         id: number;
         createId:number;
         name:string;
-        type:'dj' | 'Album'
+        type:'dj' | 'Album';
     };
 }
 
+export type MusicPlayerStackParamList = {
+    MusicPlayer:undefined;
+};
 // 定义 Bottom Tab Navigator 的参数类型
 export type RootTabParamList = {
     HomeTab: NavigatorScreenParams<HomeStackParamList>; // 关联到 HomeStack
@@ -67,7 +72,8 @@ export type RootStackParamList = {
     PlayListDetail:{
         screen: keyof PlayListDetailStackParamList;
         params: PlayListDetailStackParamList['PlayListDetail'];
-    }
+    };
+    MusicPlayer: NavigatorScreenParams<MusicPlayerStackParamList>
 };
 
 // 全局导航属性类型

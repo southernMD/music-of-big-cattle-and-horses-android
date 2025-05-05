@@ -8,14 +8,19 @@ import { Icon } from '@ant-design/react-native';
 import { usePersistentStore } from '@/hooks/usePersistentStore';
 import { Playlist } from '@/types/PlayList';
 import { convertHttpToHttps } from '@/utils/fixHttp';
-import { SongSimple } from '@/types/Song';
+import { Song } from '@/types/Song';
 import FastImage from 'react-native-fast-image';
+import { useNavigation } from '@react-navigation/native';
+import { RootStackNavigationProps } from '@/types/NavigationType';
+import { useMiniPlayer } from '@/context/MusicPlayerContext';
+import { playAllMusic } from '@/utils/player/playAllMusic';
 
 
 interface SongListProps {
-    songs: SongSimple[];
-    onSongPress?: (song: SongSimple) => void;
+    songs: Song[];
+    onSongPress?: (song: Song) => void;
     playlistDetailMsg:Playlist
+    type:'dj' | 'Album'
 }
 const screenWidth = Dimensions.get("window").width;
 
@@ -120,6 +125,16 @@ export function SongList({ songs, onSongPress,playlistDetailMsg }: SongListProps
             padding: 8,
         },
     });
+    
+    const navigation = useNavigation<RootStackNavigationProps>();
+
+    const { setMiniPlayer } = useMiniPlayer()
+    const playAll = () => {
+        navigation.navigate('MusicPlayer')
+        // setMiniPlayer('你好','没有')
+        if(songs.length === 0) return
+        playAllMusic({ willPlayId:songs[0].id,willPlayListId:playlistDetailMsg.id })
+    };
     return (
         <StickBarScrollingFlatList
             loading={false}
@@ -127,7 +142,7 @@ export function SongList({ songs, onSongPress,playlistDetailMsg }: SongListProps
                 HeaderBar: <>
                     <View style={styles.header}>
                         <View style={styles.playAllButton}>
-                            <TouchableOpacity >
+                            <TouchableOpacity onPress={playAll}>
                                 <View style={styles.playButtonIcon}>
                                     <Play color='#fff' size={20} fill='#fff' />
                                 </View>

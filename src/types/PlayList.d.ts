@@ -1,5 +1,5 @@
 import { userProfile } from '@/types/user/user'
-import { SongSimple } from './Song'
+import { Song } from './Song'
 export type Playlist = {
     id: number,
     name: string,
@@ -40,10 +40,10 @@ export type Playlist = {
     subscribers: Array<userProfile>,
     subscribed: null,
     creator: userProfile,
-    tracks: Array<any>,
+    tracks: Array<Song>,
     videoIds: null,
     videos: null,
-    trackIds: Array<SongSimple>,
+    trackIds: Array<any>,
     bannedTrackIds: null,
     mvResourceInfos: null,
     shareCount: number,

@@ -113,6 +113,7 @@ export default function PlayListDetail() {
         <>
             {playlistDetailMsg ?
                 <SongList
+                    type={type}
                     playlistDetailMsg={playlistDetailMsg}
                     songs={playListSongs}
                     onSongPress={(song) => console.log('Pressed song:', song.name)}></SongList>

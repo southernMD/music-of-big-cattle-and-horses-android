@@ -1,4 +1,5 @@
 import { userProfile,userAccount } from "@/types/user/user"
+import { Song,SongPrivilege } from '@/types/Song'
 export type BaseApiType = {
     account:userAccount | null
     profile:userProfile | null
@@ -12,4 +13,13 @@ export type UserCenterType = {
 export type GlobalType = {
     theme: 'light' | 'dark'
     primaryColor: string
+}
+
+export type useMusicPlayerType = {
+    playingList:Array<Song>
+    playingPrivileges:Array<SongPrivilege>
+    playingId:number
+    playingIndex:number
+    playStatus:'play' | 'stop'
+    PlayingListId:number
 }
