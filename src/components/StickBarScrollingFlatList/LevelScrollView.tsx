@@ -50,9 +50,7 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
 }, ref) => {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
 
-  const len = useDerivedValue(() => {
-    return tabs?.length ?? 0
-  }, [tabs]);
+  const len = useMemo(() => tabs?.length ?? 0, [tabs]);
 
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
@@ -98,7 +96,7 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
         nextIndex -= 1; // 向右滑
       }
 
-      nextIndex = Math.round(Math.max(0, Math.min(nextIndex, len.value - 1)));
+      nextIndex = Math.round(Math.max(0, Math.min(nextIndex, len - 1)));
       const targetX = nextIndex * screenWidth;
 
       // 使用 withTiming 实现动画，并在动画结束后执行回调
@@ -116,15 +114,21 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
       scrollTo(scrollRef, targetX, 0, true);
     })
   const nativeScrollY = useSharedValue(0); 
+  // const allowNativeGesture = useDerivedValue(() => {
+  //   return isHorizontal.value; // true 时允许 Native Gesture，false 时禁用
+  // });
   const nativeScroll = Gesture.Native()
-  .enabled(isHorizontal.value)
-  .onTouchesDown((e) => {
-    console.log( e.allTouches[0].y);
+  // .enabled(isHorizontal.value)
+  .onTouchesDown((e,gestureStateManager) => {
+    if (!isHorizontal.value) {
+      gestureStateManager.fail();
+    }
+    // console.log( e.allTouches[0].y);
     nativeScrollY.value = e.allTouches[0].y;
   })
   .onTouchesUp((e,gestureStateManager) => {
     const abx = Math.abs(nativeScrollY.value - e.allTouches[0].y)
-    console.log(abx,"自然事件");
+    // console.log(abx,"自然事件");
     
     if(abx < 60 && abx > 2){
       gestureStateManager.fail()

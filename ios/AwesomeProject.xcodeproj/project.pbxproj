@@ -19,6 +19,8 @@
 		0963E4A0FE19438BB8A8C91B /* music.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CCBFC77F942941DF84C5635A /* music.mp3 */; };
 		055E867DE61F4CEE8BB59865 /* img.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 7D2E96C7C7D248D98DDAEAA6 /* img.jpg */; };
 		6CA7F44EF59C40A7A44B13DC /* avatar.png in Resources */ = {isa = PBXBuildFile; fileRef = D5FDF07A1FC7445B904D8ACD /* avatar.png */; };
+		A724DFFAB9F340008594BEA4 /* icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 71C3EE0BA4D3408CA9F6C0BB /* icon.png */; };
+		C5ED2565AB3346EDBF78596A /* icon_red.png in Resources */ = {isa = PBXBuildFile; fileRef = 5781B81E9EA64AE099C7502B /* icon_red.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -55,6 +57,8 @@
 		CCBFC77F942941DF84C5635A /* music.mp3 */ = {isa = PBXFileReference; name = "music.mp3"; path = "../src/assets/mp3/music.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 		7D2E96C7C7D248D98DDAEAA6 /* img.jpg */ = {isa = PBXFileReference; name = "img.jpg"; path = "../src/assets/imgs/img.jpg"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 		D5FDF07A1FC7445B904D8ACD /* avatar.png */ = {isa = PBXFileReference; name = "avatar.png"; path = "../src/assets/imgs/avatar.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		71C3EE0BA4D3408CA9F6C0BB /* icon.png */ = {isa = PBXFileReference; name = "icon.png"; path = "../src/assets/imgs/icon.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		5781B81E9EA64AE099C7502B /* icon_red.png */ = {isa = PBXFileReference; name = "icon_red.png"; path = "../src/assets/imgs/icon_red.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -169,6 +173,8 @@
 				CCBFC77F942941DF84C5635A /* music.mp3 */,
 				7D2E96C7C7D248D98DDAEAA6 /* img.jpg */,
 				D5FDF07A1FC7445B904D8ACD /* avatar.png */,
+				71C3EE0BA4D3408CA9F6C0BB /* icon.png */,
+				5781B81E9EA64AE099C7502B /* icon_red.png */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -274,6 +280,8 @@
 				0963E4A0FE19438BB8A8C91B /* music.mp3 in Resources */,
 				055E867DE61F4CEE8BB59865 /* img.jpg in Resources */,
 				6CA7F44EF59C40A7A44B13DC /* avatar.png in Resources */,
+				A724DFFAB9F340008594BEA4 /* icon.png in Resources */,
+				C5ED2565AB3346EDBF78596A /* icon_red.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

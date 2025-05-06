@@ -55,7 +55,9 @@ export const useMusicPlayer = proxy<useMusicPlayerType>({
     playingId:-1,
     playingIndex:-1,
     playStatus:'stop',
-    PlayingListId:-1
+    // addPlayingListIds:[], //将要添加到播放列表的音乐列表
+    PlayingListId:-1,
+    playingSongAlBkColor:"#000"
     //上一个播放的歌单id(限自己的歌单暂时)，在开始播放后会变成正在播放的歌单
     //0已下载 -1默认状态 -2本地  -3最近 -4私人FM -5个人排行 -6 top50
 })

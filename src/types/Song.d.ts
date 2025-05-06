@@ -100,8 +100,56 @@ export type SongPrivilege = {
     ignoreCache: null
 }
 
+export type SongUrl = {
+    id: number,
+    url: string,
+    br: SongQualityCode,
+    size: number,
+    md5: string,
+    code: number,
+    expi: number,
+    type: string,
+    gain: number,
+    peak: number,
+    closedGain: number,
+    closedPeak: number,
+    fee: number,
+    uf: null,
+    payed: number,
+    flag: number,
+    canExtend: boolean,
+    freeTrialInfo: boolean,
+    level:SongQuality,
+    encodeType:string,
+    channelLayout: null,
+    freeTrialPrivilege: {
+        resConsumable: boolean,
+        userConsumable: boolean,
+        listenType: null,
+        cannotListenReason: null,
+        playReason: null,
+        freeLimitTagType: null
+    },
+    freeTimeTrialPrivilege: {
+        resConsumable: boolean,
+        userConsumable: boolean,
+        type: number,
+        remainTime: number
+    },
+    urlSource:number,
+    rightSource: number,
+    podcastCtrp: null,
+    effectTypes: null,
+    time: number,
+    message: null,
+    levelConfuse: null,
+    musicId: string,
+    accompany: null,
+    sr: number
+}
+
 export type SongQualityCode = 128000 | 192000 | 320000 | 999000
-export type SongQuality = 'standard' | 'higher' | 'exhigh' | 'lossless' | 'hires' | 'jycf'
+export type SongQuality = 'standard' | 'higher' | 'exhigh' | 'lossless' | 'hires' | 'jycf' | 'jyeffect' | 'sky' | 'jymaster'
 
 export type SongArSimple = {
     id: number,

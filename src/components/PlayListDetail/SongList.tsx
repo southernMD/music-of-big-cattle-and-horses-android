@@ -4,7 +4,7 @@ import { PlaylistHeader } from './PlayListHeader';
 import StickBarScrollingFlatList from '../StickBarScrollingFlatList/StickBarScrollingFlatList';
 import { FlatList } from 'react-native-gesture-handler';
 import { useTheme } from '@/hooks/useTheme';
-import { Icon } from '@ant-design/react-native';
+import { Icon, Toast } from '@ant-design/react-native';
 import { usePersistentStore } from '@/hooks/usePersistentStore';
 import { Playlist } from '@/types/PlayList';
 import { convertHttpToHttps } from '@/utils/fixHttp';
@@ -14,17 +14,18 @@ import { useNavigation } from '@react-navigation/native';
 import { RootStackNavigationProps } from '@/types/NavigationType';
 import { useMiniPlayer } from '@/context/MusicPlayerContext';
 import { playAllMusic } from '@/utils/player/playAllMusic';
+import { debounce } from '@/utils/Debounce';
 
 
 interface SongListProps {
     songs: Song[];
-    onSongPress?: (song: Song) => void;
+    onSongPress?: (song: Song,type : 'dj' | 'Album') => void;
     playlistDetailMsg:Playlist
     type:'dj' | 'Album'
 }
 const screenWidth = Dimensions.get("window").width;
 
-export function SongList({ songs, onSongPress,playlistDetailMsg }: SongListProps) {
+export function SongList({ songs, onSongPress,playlistDetailMsg,type }: SongListProps) {
     const { box, typography, boxReflect } = useTheme()
     const primaryColor = usePersistentStore<string>('primaryColor');
 
@@ -128,12 +129,15 @@ export function SongList({ songs, onSongPress,playlistDetailMsg }: SongListProps
     
     const navigation = useNavigation<RootStackNavigationProps>();
 
-    const { setMiniPlayer } = useMiniPlayer()
-    const playAll = () => {
-        navigation.navigate('MusicPlayer')
-        // setMiniPlayer('你好','没有')
+    const playAll = async () => {
         if(songs.length === 0) return
-        playAllMusic({ willPlayId:songs[0].id,willPlayListId:playlistDetailMsg.id })
+        await playAllMusic({ willPlayListId:playlistDetailMsg.id }).catch((e)=>{
+            console.log(e);
+            Toast.show({
+                content: "获取歌曲失败",
+                position: 'bottom'
+            });
+        })
     };
     return (
         <StickBarScrollingFlatList
@@ -142,7 +146,7 @@ export function SongList({ songs, onSongPress,playlistDetailMsg }: SongListProps
                 HeaderBar: <>
                     <View style={styles.header}>
                         <View style={styles.playAllButton}>
-                            <TouchableOpacity onPress={playAll}>
+                            <TouchableOpacity onPress={debounce(playAll,1000)}>
                                 <View style={styles.playButtonIcon}>
                                     <Play color='#fff' size={20} fill='#fff' />
                                 </View>
@@ -176,7 +180,7 @@ export function SongList({ songs, onSongPress,playlistDetailMsg }: SongListProps
                                 <TouchableOpacity
                                     key={item.id}
                                     style={styles.songItem}
-                                    onPress={() => onSongPress?.(item)}
+                                    onPress={() => onSongPress?.(item,type)}
                                 >
                                     <Text style={styles.songIndex}>{(index + 1).toString().padStart(2, '0')}</Text>
                                     <FastImage source={{ uri: convertHttpToHttps(item.al.picUrl) }} style={styles.songCover} />

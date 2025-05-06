@@ -1,5 +1,5 @@
+import { playlistTrackAll } from "@/api";
 import { useMusicPlayer } from "@/store";
-import { useSnapshot } from "valtio";
 
 export type PlayAllMusicProps = { 
     willPlayId?: number
@@ -7,18 +7,33 @@ export type PlayAllMusicProps = {
 }
 
 export const playAllMusic = async ({ willPlayId,willPlayListId }:PlayAllMusicProps) => { 
-    const { playingList,playingId } = useSnapshot(useMusicPlayer)
-    const index = willPlayId ? playingList.findIndex(item => item.id === willPlayId) : -1
-    if(index !== -1){
-        //--播放--
-        useMusicPlayer.playingId = willPlayId!
-    }else{
-        //如果有willPlayListId,直接获取歌单
-        if(willPlayListId){
-            //--发起歌单请求--
-            useMusicPlayer.playingId = willPlayId!
-            useMusicPlayer.PlayingListId = willPlayListId
-            return 
-        }
+    // const index = willPlayId ? useMusicPlayer.playingList.findIndex(item => item.id === willPlayId) : -1
+    // if(index !== -1){
+    //     useMusicPlayer.playingId = willPlayId!
+    //     useMusicPlayer.playingIndex = 0
+    //     return
+    // }else{
+    //     //如果有willPlayListId,直接获取歌单
+    //     if(willPlayListId){
+    //         const { songs,privileges } = await playlistTrackAll(willPlayListId)
+    //         //暂时为替换，后续在设置内更改添加到播放列表或者是替换
+    //         useMusicPlayer.playingList = songs
+    //         useMusicPlayer.playingPrivileges = privileges
+    //         useMusicPlayer.playingId = willPlayId!
+    //         useMusicPlayer.PlayingListId = willPlayListId
+    //         useMusicPlayer.playingIndex = 0
+    //         return 
+    //     }
+    // }
+    if(willPlayListId){
+        const { songs,privileges } = await playlistTrackAll(willPlayListId)
+        //暂时为替换，后续在设置内更改添加到播放列表或者是替换
+        useMusicPlayer.playingList = songs
+        useMusicPlayer.playingPrivileges = privileges
+        useMusicPlayer.PlayingListId = willPlayListId
     }
+    const index = willPlayId ? useMusicPlayer.playingList.findIndex(item => item.id === willPlayId) : 0
+    useMusicPlayer.playingIndex = index
+    useMusicPlayer.playingId = willPlayId!
+    return 
 };

@@ -4,99 +4,10 @@ import { SongList } from '@/components/PlayListDetail/SongList';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { PlayListDetailStackParamList } from '@/types/NavigationType';
 import { useEffect, useMemo, useState } from 'react';
-import { playlistDetail } from '@/api';
+import { playlistDetail, SongDetail } from '@/api';
 import { Playlist } from '@/types/PlayList';
-
-const mockSongs = [
-    {
-        id: '1',
-        title: 'Torauma - 椿',
-        artist: '椿',
-        cover: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg',
-        quality: '超清母带',
-    },
-    {
-        id: '2',
-        title: '幼き自分へ',
-        artist: '偽物',
-        album: '幼き自分へ',
-        cover: 'https://images.pexels.com/photos/1389429/pexels-photo-1389429.jpeg',
-        quality: 'Hi-Res',
-    },
-    {
-        id: '3',
-        title: '4H',
-        artist: 'Z²',
-        album: '4H',
-        cover: 'https://images.pexels.com/photos/1616096/pexels-photo-1616096.jpeg',
-        quality: '超清母带',
-    },
-    {
-        id: '4',
-        title: '君と地球で（地球和你）',
-        artist: 'Hayato Yoshida',
-        album: 'ボク',
-        cover: 'https://images.pexels.com/photos/3721941/pexels-photo-3721941.jpeg',
-        quality: '沉浸声',
-    },
-    {
-        id: '5',
-        title: 'Jus Like Me (feat. Sekunda)',
-        artist: "Kno'Mo'/SEKUNDA",
-        cover: 'https://images.pexels.com/photos/1835712/pexels-photo-1835712.jpeg',
-    },
-    {
-        id: '7',
-        title: 'Poetry',
-        artist: 'GOMESS',
-        album: 'てる',
-        cover: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg',
-        quality: '超清母带',
-    },
-    {
-        id: '8',
-        title: 'Poetry',
-        artist: 'GOMESS',
-        album: 'てる',
-        cover: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg',
-        quality: '超清母带',
-    }, {
-        id: '9',
-        title: 'Poetry',
-        artist: 'GOMESS',
-        album: 'てる',
-        cover: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg',
-        quality: '超清母带',
-    }, {
-        id: '10',
-        title: 'Poetry',
-        artist: 'GOMESS',
-        album: 'てる',
-        cover: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg',
-        quality: '超清母带',
-    }, {
-        id: '11',
-        title: 'Poetry',
-        artist: 'GOMESS',
-        album: 'てる',
-        cover: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg',
-        quality: '超清母带',
-    }, {
-        id: '12',
-        title: 'Poetry',
-        artist: 'GOMESS',
-        album: 'てる',
-        cover: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg',
-        quality: '超清母带',
-    }, {
-        id: '13',
-        title: 'Poetry',
-        artist: 'GOMESS',
-        album: 'てる',
-        cover: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg',
-        quality: '超清母带',
-    },
-];
+import { Song } from '@/types/Song';
+import { useMusicPlayer } from '@/store';
 
 export default function PlayListDetail() {
     const route = useRoute<RouteProp<PlayListDetailStackParamList>>();
@@ -109,6 +20,30 @@ export default function PlayListDetail() {
             setPlayListDetailMsg(res.playlist)
         })
     },[])
+
+    const playSong = (song:Song,type: 'dj' | 'Album')=>{
+        console.log('Pressed song:', song.name)
+        //以下实现的是将歌曲添加到播放列表并播放
+        if(true){
+            const indexInPlayingList = useMusicPlayer.playingList.findIndex((item)=>item.id === song.id)
+            
+            if(indexInPlayingList === -1){
+                SongDetail([song.id]).then(({privileges,songs})=>{
+                    const newIndex = useMusicPlayer.playingIndex + 1;
+                    useMusicPlayer.playingIndex = newIndex;
+                    useMusicPlayer.playingList.splice(newIndex,0,...songs)
+                    useMusicPlayer.playingPrivileges.splice(newIndex,0,...privileges)
+                })
+            }else{
+                useMusicPlayer.playingIndex = indexInPlayingList
+            }
+            useMusicPlayer.PlayingListId = -1
+            useMusicPlayer.playingId = song.id
+        }else{
+            //歌单全部歌曲添加到播放列表
+            useMusicPlayer.PlayingListId = id
+        }
+    }
     return (
         <>
             {playlistDetailMsg ?
@@ -116,7 +51,7 @@ export default function PlayListDetail() {
                     type={type}
                     playlistDetailMsg={playlistDetailMsg}
                     songs={playListSongs}
-                    onSongPress={(song) => console.log('Pressed song:', song.name)}></SongList>
+                    onSongPress={playSong}></SongList>
                 : ''}
         </>
     );

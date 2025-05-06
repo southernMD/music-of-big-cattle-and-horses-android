@@ -1,34 +1,54 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Repeat, SkipBack, Play, SkipForward, List } from 'lucide-react-native';
-
+import { Repeat, SkipBack, Play, SkipForward, List, Pause } from 'lucide-react-native';
+import { useMusicPlayer } from '@/store';
+import { usePersistentStore } from '@/hooks/usePersistentStore';
+import { useMemo } from 'react';
+import { useSnapshot } from 'valtio'
+import { isLightColor } from '@/utils/isLightColor';
+import { useMiniPlayer } from '@/context/MusicPlayerContext';
+import { dayjsMMSS } from '@/utils/dayjs';
 export function PlayerControls() {
+  const musicPlayer = useSnapshot(useMusicPlayer)
+  const fontColor = useMemo(() => {
+    return isLightColor(musicPlayer.playingSongAlBkColor.average!) ? musicPlayer.playingSongAlBkColor.darkVibrant : musicPlayer.playingSongAlBkColor.lightMuted
+  }, [musicPlayer.playingSongAlBkColor.average])
+
+  const { getMiniPlayer } = useMiniPlayer()
+  const { currentTime, progress, durationTime } = useMemo(() => {
+    return getMiniPlayer()
+  }, [getMiniPlayer()])
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: musicPlayer.playingSongAlBkColor.average }]}>
       <View style={styles.progressContainer}>
         <View style={styles.progressBar}>
-          <View style={styles.progress} />
+          <View style={[styles.progress, { width: `${progress}%` }]} />
         </View>
         <View style={styles.timeContainer}>
-          <Text style={styles.timeText}>00:02</Text>
-          <Text style={styles.timeText}>02:54</Text>
+          <Text style={styles.timeText}>{dayjsMMSS(currentTime)}</Text>
+          <Text style={styles.timeText}>{dayjsMMSS(durationTime)}</Text>
         </View>
       </View>
-      
+
       <View style={styles.controls}>
         <TouchableOpacity style={styles.sideButton}>
-          <Repeat color="#fff" size={24} />
+          <Repeat color={fontColor} size={24} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.controlButton}>
-          <SkipBack color="#fff" size={32} />
+          <SkipBack color={fontColor} size={32} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.playButton}>
-          <Play color="#fff" size={32} fill="#fff" />
+          {
+            useMusicPlayer.playStatus === 'play' ?
+              <Pause color={fontColor} size={32} fill={fontColor} />
+              : <Play color={fontColor} size={32} fill={fontColor} />
+          }
+          
         </TouchableOpacity>
         <TouchableOpacity style={styles.controlButton}>
-          <SkipForward color="#fff" size={32} />
+          <SkipForward color={fontColor} size={32} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.sideButton}>
-          <List color="#fff" size={24} />
+          <List color={fontColor} size={24} />
         </TouchableOpacity>
       </View>
     </View>
@@ -39,7 +59,7 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
     padding: 40,
-    backgroundColor:"#000"
+    backgroundColor: "#000"
   },
   progressContainer: {
     marginBottom: 20,

@@ -1,7 +1,8 @@
 import { QrCheckType, QrImageType, qrKeyType } from "@/types/api/qr";
 import { customFetch as fetch } from "./init";
 import { LoginUserType, QuitLoginType, UserDetailType, UserDjType, UserPlaylistType } from "@/types/api/user";
-import { PlayListType } from "@/types/api/PlayListType";
+import { PlaylistTrackType, PlayListType } from "@/types/api/PlayListType";
+import { SongDetailsType, SongUrlType } from "@/types/api/song";
 
 export const apiTest = async () => {
    return fetch('/user/playlist?uid=361080509')
@@ -78,5 +79,30 @@ export const userDj = async (uid:number)=>{
 export const playlistDetail = async (id:string | number)=>{
     return await fetch<PlayListType>(`/playlist/detail?id=${id}`, {
         method: 'GET'
+    })
+}
+
+
+export const playlistTrackAll= (id:string | number,limit?:string | number,offset?:string | number)=>{
+    return fetch<PlaylistTrackType>(`/playlist/track/all?id=${id}`,{
+        method:'POST',
+        body:JSON.stringify({
+            limit,
+            offset,
+        })
+    })
+}
+
+//一首歌的url
+export const SongUrl = (id:number,level:string = 'standard')=>{
+    return fetch<SongUrlType>(`/song/url/v1?id=${id}&level=${level}`,{
+        method:'POST',
+    })
+}
+
+//歌曲们的详情
+export const SongDetail = (ids:number[])=>{
+    return fetch<SongDetailsType>(`/song/detail?ids=${ids.join(',')}`,{
+        method:'POST',
     })
 }

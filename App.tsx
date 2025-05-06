@@ -15,7 +15,7 @@ import { Dark, Light } from '@/utils/theme';
 import { setItem, getItem, clearItem, usePersistentStore } from '@/hooks/usePersistentStore';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { LoadingMaodalProvider, useLoadingModal } from '@/context/LoadingModalContext';
-import { MiniPlayerProvider } from '@/context/MusicPlayerContext';
+import { MiniPlayerProvider, useMiniPlayer } from '@/context/MusicPlayerContext';
 import { NavigationContainerRef } from '@react-navigation/native';
 import { RootStackParamList } from '@/types/NavigationType';
 
@@ -25,7 +25,6 @@ if (__DEV__) {
 function App(): React.JSX.Element {
   const primaryColor = usePersistentStore<string>('primaryColor', 'rgba(102, 204, 255,1)');
   const isDark = usePersistentStore<boolean>('isDark', false);
-
   const theme = useMemo(() => {
     const base = isDark ? Dark : Light;
     return {
@@ -49,9 +48,13 @@ function App(): React.JSX.Element {
   }, [isDark, primaryColor]);
   const navigationRef= useRef<NavigationContainerRef<RootStackParamList>>(null);
   const [currentRoute, setCurrentRoute] = useState(undefined);
+
+  const openMusicPlayer = () => {
+    navigationRef.current?.navigate('MusicPlayer');
+  };
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <MiniPlayerProvider currentRoute={currentRoute}>
+      <MiniPlayerProvider currentRoute={currentRoute} openMusicPlayer={openMusicPlayer}>
         <LoadingMaodalProvider>
           <FullScreenImageProvider>
             <Provider>
