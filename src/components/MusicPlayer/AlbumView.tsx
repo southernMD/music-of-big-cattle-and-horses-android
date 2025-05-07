@@ -1,4 +1,4 @@
-import { View, Image, TouchableOpacity, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
+import { View, Image, TouchableOpacity, StyleSheet, Dimensions, Animated, Easing, Pressable } from 'react-native';
 import { Heart, History, Send, MessageSquare, MoveVertical as MoreVertical } from 'lucide-react-native';
 import { Icon } from '@ant-design/react-native';
 import { useTheme } from '@/hooks/useTheme';
@@ -10,6 +10,7 @@ import { convertHttpToHttps } from '@/utils/fixHttp';
 import { useSnapshot } from 'valtio'
 import FastImage from 'react-native-fast-image';
 import { isLightColor } from '@/utils/isLightColor';
+import { useFullScreenImage } from '@/context/imgFullPreviewContext';
 export function AlbumView() {
     const { box, typography } = useTheme()
     const musicPlayer = useSnapshot(useMusicPlayer)
@@ -21,16 +22,19 @@ export function AlbumView() {
     const fontColor = useMemo(() => {
         return isLightColor(musicPlayer.playingSongAlBkColor.average!) ? musicPlayer.playingSongAlBkColor.darkVibrant : musicPlayer.playingSongAlBkColor.lightMuted
     }, [musicPlayer.playingSongAlBkColor.average])
+
+    const { showFullScreenImage, isVisible } = useFullScreenImage();
+    
     return (
         <View style={[styles.container, { backgroundColor: useMusicPlayer.playingSongAlBkColor.average }]}>
-            <View style={styles.recordContainer}>
+            <Pressable style={styles.recordContainer} onLongPress={()=>showFullScreenImage(playingSongCover)}>
                 <View style={[styles.record, { backgroundColor: useMusicPlayer.playingSongAlBkColor?.lightVibrant, shadowColor: useMusicPlayer.playingSongAlBkColor?.muted }]}>
                     <RotatingImage source={{ uri: playingSongCover }}></RotatingImage>
                 </View>
-            </View>
+            </Pressable>
 
-            <View style={styles.actions}>
-                <TouchableOpacity style={styles.actionButton}>
+            <View style={styles.actions} >
+                <TouchableOpacity style={styles.actionButton} onPress={()=>showFullScreenImage(playingSongCover)}>
                     <Heart color={fontColor} size={24} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionButton}>

@@ -30,33 +30,38 @@ export interface LevelScrollViewRef {
 }
 // useAnimatedRef<Animated.ScrollView>
 interface Props {
-  tabs?: { key: string; name: string }[];
-  scrollY: SharedValue<number>;
+  blockLen:number;
   loading: boolean
   Scrolling: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   horizontalScrollX: SharedValue<number>
   children: [React.ReactElement,React.ReactElement];
   panGesture?:PanGesture
+  itemWidth?:number
+  startIndex?:number
 }
 
 const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
   children,
-  tabs,
-  scrollY,
+  blockLen = 0,
   loading,
   Scrolling,
   horizontalScrollX,
-  panGesture
+  panGesture,
+  itemWidth = screenWidth,
+  startIndex = 0
 }, ref) => {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
-
-  const len = useMemo(() => tabs?.length ?? 0, [tabs]);
 
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
   const isHorizontal = useSharedValue(true);
 
-
+  useEffect(() => {
+    scrollTo(scrollRef, startIndex * itemWidth, 0, false);
+    console.log("执行 scrollTo:", startIndex * itemWidth);
+    horizontalScrollX.value = startIndex * itemWidth;
+  }, [children[1]]);
+  
   const directionalPanGesture = Gesture.Pan()
     .manualActivation(true)
     .onTouchesDown((e) => {
@@ -86,18 +91,20 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
     .onEnd((e) => {
       
       const offsetX = -e.translationX; // 用户滑动的距离（右滑为负）
-      const threshold = screenWidth * 0.2; // 比原来的“0.5页面”更灵敏
+      const threshold = itemWidth * 0.2; // 比原来的“0.5页面”更灵敏
 
-      let nextIndex = horizontalScrollX.value / screenWidth;
-
+      let nextIndex = horizontalScrollX.value / itemWidth;
+      console.log(horizontalScrollX.value,"horizontalScrollX.value");
+      
       if (offsetX > threshold) {
         nextIndex += 1; // 向左滑
       } else if (offsetX < -threshold) {
         nextIndex -= 1; // 向右滑
       }
 
-      nextIndex = Math.round(Math.max(0, Math.min(nextIndex, len - 1)));
-      const targetX = nextIndex * screenWidth;
+      nextIndex = Math.round(Math.max(0, Math.min(nextIndex, blockLen - 1)));
+      // console.log(nextIndex);
+      const targetX = nextIndex * itemWidth;
 
       // 使用 withTiming 实现动画，并在动画结束后执行回调
       cancelAnimation(horizontalScrollX);
@@ -106,7 +113,7 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
         { duration: 300 }, // 动画时长
         (isFinished) => {
           if (isFinished) {
-            console.log('动画结束');
+            // console.log('动画结束');
             isHorizontal.value = true; 
           }
         }

@@ -13,7 +13,7 @@ export function PlayerControls() {
     return isLightColor(musicPlayer.playingSongAlBkColor.average!) ? musicPlayer.playingSongAlBkColor.darkVibrant : musicPlayer.playingSongAlBkColor.lightMuted
   }, [musicPlayer.playingSongAlBkColor.average])
 
-  const { getMiniPlayer } = useMiniPlayer()
+  const { getMiniPlayer,changeSoundPlaying } = useMiniPlayer()
   const { currentTime, progress, durationTime } = useMemo(() => {
     return getMiniPlayer()
   }, [getMiniPlayer()])
@@ -36,7 +36,7 @@ export function PlayerControls() {
         <TouchableOpacity style={styles.controlButton}>
           <SkipBack color={fontColor} size={32} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.playButton}>
+        <TouchableOpacity style={styles.playButton} onPress={changeSoundPlaying}>
           {
             useMusicPlayer.playStatus === 'play' ?
               <Pause color={fontColor} size={32} fill={fontColor} />

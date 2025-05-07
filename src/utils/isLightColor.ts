@@ -16,6 +16,6 @@ export function isLightColor(hexColor: string): boolean {
   
     // 使用 W3C 推荐的相对亮度算法
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
-    return luminance > 186; // 这个阈值你可以调整，比如 128 更严格
+    return luminance > 128; // 这个阈值你可以调整，比如 128 更严格
   }
   

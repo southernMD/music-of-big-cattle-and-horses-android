@@ -27,17 +27,17 @@ interface Props {
     Scrolling?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
     loading: boolean
     panGesture?:PanGesture
+    itemWidth?: number
 }
-const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling, loading,panGesture }) => {
-    const scrollY = useSharedValue(0);
+const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling, loading,panGesture,itemWidth = screenWidth }) => {
     const horizontalScrollX = useSharedValue(0);
     const translateY = useSharedValue(0);
 
     const throttledTabChange = useThrottleCallback((key: string) => {
         const index = tabs!.findIndex(tab => tab.key === key);
         if (index !== -1) {
-            levelScrollViewRef.current?.scrollRef.current?.scrollTo({ x: index * screenWidth, animated: true });
-            horizontalScrollX.value = index * screenWidth;
+            levelScrollViewRef.current?.scrollRef.current?.scrollTo({ x: index * itemWidth, animated: true });
+            horizontalScrollX.value = index * itemWidth;
         }
     }, 200);
     const levelScrollViewRef = useRef<LevelScrollViewRef>(null)
@@ -92,12 +92,12 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
 
             <LevelScrollView
                 Scrolling={ScrollingUserCenter}
-                tabs={tabs}
-                scrollY={scrollY}
+                blockLen={tabs?.length || 0}
                 loading={loading}
                 ref={levelScrollViewRef}
                 horizontalScrollX={horizontalScrollX}
                 panGesture={panGesture}
+                itemWidth={itemWidth}
             >
                 <>
                     {children.HeaderContent}

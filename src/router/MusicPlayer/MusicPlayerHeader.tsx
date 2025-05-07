@@ -7,6 +7,7 @@ import { useMusicPlayer } from '@/store';
 import { isLightColor } from '@/utils/isLightColor';
 import { useMemo } from 'react';
 import { useMiniPlayer } from '@/context/MusicPlayerContext';
+import MarqueeScroll from '@/components/MarqueeScroll';
 const screenWidth = Dimensions.get("window").width;
 
 export function CustomHeaderTitle() {
@@ -26,8 +27,8 @@ export function CustomHeaderTitle() {
                 <ChevronDown color={fontColor} size={24} />
             </TouchableOpacity>
             <View style={styles.titleContainer}>
-                <Text style={[styles.title, { color: fontColor }]}>{obj.title}</Text>
-                <Text style={[styles.artist, { color: fontColor }]}>{obj.artist}</Text>
+                <MarqueeScroll text={obj.title} color={fontColor!} />
+                <Text style={[styles.artist, { color: fontColor }]} numberOfLines={1}>{obj.artist}</Text>
             </View>
             <TouchableOpacity>
                 <Share2 color={fontColor} size={24} />
@@ -54,10 +55,12 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 16,
         fontWeight: '600',
+        textAlign: 'center',
     },
     artist: {
         color: 'rgba(255, 255, 255, 0.7)',
         fontSize: 14,
         marginTop: 4,
+        textAlign: 'center',
     },
 });

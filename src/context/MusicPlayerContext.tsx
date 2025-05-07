@@ -1,5 +1,5 @@
-import React, { createContext, useState, useContext, memo, useEffect, RefObject, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, InteractionManager, Pressable } from 'react-native';
+import React, { createContext, useState, useContext, memo, useEffect, RefObject, useMemo, useRef, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, InteractionManager, Pressable, Dimensions } from 'react-native';
 import { List, Pause, Play } from 'lucide-react-native';
 import { NavigationContainerRef, ParamListRoute, useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '@/types/NavigationType';
@@ -15,6 +15,11 @@ import { watch } from 'valtio/utils';
 import { usePersistentStore } from '@/hooks/usePersistentStore';
 import ImageColors from 'react-native-image-colors';
 import { AndroidImageColors } from 'react-native-image-colors/lib/typescript/types';
+import { HorizontaSlidingGesture } from '@/components/HorizontaSlidingGesture';
+import StickBarScrollingFlatList from '@/components/StickBarScrollingFlatList/StickBarScrollingFlatList';
+import { FlatList } from 'react-native-gesture-handler';
+import LevelScrollView, { LevelScrollViewRef } from '@/components/StickBarScrollingFlatList/LevelScrollView';
+import { useSharedValue } from 'react-native-reanimated';
 interface MiniPlayerProps {
     title: string;
     artist: string;
@@ -30,43 +35,47 @@ interface MiniPlayerContextValue {
         artist: string;
         progress: number;
         cover: string;
-        currentTime:number;
-        durationTime:number;
+        currentTime: number;
+        durationTime: number;
     };
     updateProgress: (progress: number) => void;
+    changeSoundPlaying: () => void;
 }
 
 const MiniPlayerContext = createContext<MiniPlayerContextValue>({
     setMiniPlayer: () => { },
     hideMiniPlayer: () => { },
     updateProgress: () => { },
-    getMiniPlayer: () => { return { title: '', artist: '', progress: 0, cover: '',currentTime:0,durationTime:0 } },
+    getMiniPlayer: () => { return { title: '', artist: '', progress: 0, cover: '', currentTime: 0, durationTime: 0 } },
     showMiniPlayer: () => { },
+    changeSoundPlaying: () => { },
 });
 
-const SIZE = 30;
+const SIZE = 25;
 const STROKE_WIDTH = 2;
 const RADIUS = (SIZE - STROKE_WIDTH) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+const { width: screenWidth } = Dimensions.get('window');
+const rowWidth = screenWidth * 0.75; // styles.row 的宽度
 
-export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRoute?: ParamListRoute<any>,openMusicPlayer:()=>void }> = memo(({ children, currentRoute,openMusicPlayer }) => {
-    const isDark = usePersistentStore<boolean>('isDark'); 
+export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRoute?: ParamListRoute<any>, openMusicPlayer: () => void }> = memo(({ children, currentRoute, openMusicPlayer }) => {
+    const isDark = usePersistentStore<boolean>('isDark');
     const [isVisible, setIsVisible] = useState(false);
     const [title, setTitle] = useState('好音乐，用牛马');
     const [artist, setArtist] = useState('');
     const [progress, setProgress] = useState(0);
-    const [cover, setCover] = useState(isDark?'icon':'icon_red')
+    const [cover, setCover] = useState(isDark ? 'icon' : 'icon_red')
     const [safeNeedTransition, setSafeNeedTransition] = useState(false);
     const prevNeedTransitionRef = useRef<boolean>(false);
-    const [durationTime,setDurationTime] = useState(0)
-    const [currentTime,setCurrentTime] = useState(0)
+    const [durationTime, setDurationTime] = useState(0)
+    const [currentTime, setCurrentTime] = useState(0)
     useEffect(() => {
         console.log(currentRoute);
         const nextNeedTransition = NEED_FOOTER_BAR_ROUTE.includes(currentRoute?.name!);
         const prev = prevNeedTransitionRef.current;
         console.log(!prev && nextNeedTransition);
         console.log(!nextNeedTransition);
-        
+
         if (!prev && nextNeedTransition) {
             const timer = setTimeout(() => {
                 showMiniPlayer()
@@ -84,7 +93,7 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
         prevNeedTransitionRef.current = nextNeedTransition;
         if (currentRoute?.name === 'MusicPlayer') {
             console.log("?????123");
-            
+
             hideMiniPlayer()
         } else {
             const timer = setTimeout(() => {
@@ -103,7 +112,7 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
     };
 
     const getMiniPlayer = () => {
-        return { title, artist, progress,cover,durationTime,currentTime };
+        return { title, artist, progress, cover, durationTime, currentTime };
     };
 
     const hideMiniPlayer = () => {
@@ -112,20 +121,14 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
 
 
     const showMiniPlayer = () => {
-       if(useMusicPlayer.playingList.length) setIsVisible(true);
+        if (useMusicPlayer.playingList.length) setIsVisible(true);
     };
 
     const updateProgress = (progress: number) => {
         if (isVisible) setProgress(progress);
     };
 
-    const contextValue: MiniPlayerContextValue = {
-        setMiniPlayer,
-        hideMiniPlayer,
-        updateProgress,
-        showMiniPlayer,
-        getMiniPlayer
-    };
+
     const musicPlayer = useSnapshot(useMusicPlayer);
     const soundRef = useRef<Sound | null>(null); // 添加 Sound 的 ref
 
@@ -187,7 +190,7 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
                         setProgress(currentTime / duration * 100)
                         setCurrentTime(currentTime * 1000)
                     });
-                }, 400);
+                }, 200);
 
                 sound.setNumberOfLoops(0);
 
@@ -220,9 +223,21 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
         }
     }, [musicPlayer.playingList])
     const changeSoundPlaying = () => {
+        if (!soundRef.current && useMusicPlayer.playingList[useMusicPlayer.playingIndex]) {
+            useMusicPlayer.playingId = useMusicPlayer.playingList[useMusicPlayer.playingIndex].id
+            return
+        }
+        if (soundRef.current!.isPlaying()) {
+            soundRef.current!.pause(() => {
+                useMusicPlayer.playStatus = 'stop'
+            })
+        } else {
+            soundRef.current!.play()
+            useMusicPlayer.playStatus = 'play'
+        }
     }
 
-    useEffect(() => { 
+    useEffect(() => {
         ImageColors.getColors(cover, { fallback: '#000000' }).then((colors) => {
             console.log(colors);
             useMusicPlayer.playingSongAlBkColor = (colors as AndroidImageColors)
@@ -233,6 +248,17 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
         hideMiniPlayer()
         openMusicPlayer()
     }
+
+    const contextValue: MiniPlayerContextValue = {
+        setMiniPlayer,
+        hideMiniPlayer,
+        updateProgress,
+        showMiniPlayer,
+        getMiniPlayer,
+        changeSoundPlaying
+    };
+
+
     return (
         <MiniPlayerContext.Provider value={contextValue}>
             {children}
@@ -240,16 +266,7 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
                 <Pressable onPress={openMiniPlayer}>
                     <View style={[styles.container, { bottom: safeNeedTransition ? FOOTER_BAR_HEIGHT : 0 }]}>
                         <View style={styles.content}>
-                            <FastImage
-                                source={{ uri: cover }}
-                                style={styles.cover}
-                            />
-
-                            <View style={styles.info}>
-                                <Text style={styles.title} numberOfLines={1}>{title}</Text>
-                                <Text style={styles.artist} numberOfLines={1}>{artist}</Text>
-                            </View>
-
+                            <MusicPlayerMiniFlatList></MusicPlayerMiniFlatList>
                             <View style={styles.controls}>
                                 <TouchableOpacity style={styles.playButton} onPress={changeSoundPlaying}>
                                     <Svg width={SIZE} height={SIZE}>
@@ -296,6 +313,69 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
     );
 });
 
+const SongItem = memo(({ cover, title, artist }: { cover: string, title: string, artist: string }) => {
+    return (
+        <View style={styles.rowItem}>
+            <FastImage
+                source={{ uri: cover }}
+                style={styles.cover}
+            />
+
+            <View style={styles.info}>
+                <Text style={styles.title} numberOfLines={1}>{title}</Text>
+                <Text style={styles.artist} numberOfLines={1}>{artist}</Text>
+            </View>
+        </View>
+    )
+})
+
+const MusicPlayerMiniFlatList = memo(() => {
+    const levelScrollViewRef = useRef<LevelScrollViewRef>(null)
+    const horizontalScrollX = useSharedValue(0);
+    console.log('我刷新了MusicPlayerMiniFlatList');
+
+    const musicPlayer = useSnapshot(useMusicPlayer)
+
+    const playingSongNearly = useMemo(() => { 
+        const index = useMusicPlayer.playingIndex
+        const length = useMusicPlayer.playingList.length;
+        const prevIndex = (index - 1 + length) % length;
+        const nextIndex = (index + 1) % length;
+        return [
+            useMusicPlayer.playingList[prevIndex],
+            useMusicPlayer.playingList[index],
+            useMusicPlayer.playingList[nextIndex]
+        ];
+    }, [musicPlayer.playingId,musicPlayer.playingIndex])
+
+    return (
+        <LevelScrollView
+            Scrolling={() => { }}
+            loading={false}
+            ref={levelScrollViewRef}
+            horizontalScrollX={horizontalScrollX}
+            itemWidth={rowWidth}
+            blockLen={3}
+            startIndex={1}
+        >
+           <></>
+           <>
+            <FlatList
+                keyExtractor={(item,index) => `${item.id}-${index}`}
+                data={playingSongNearly}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                renderItem={({item}) => {
+                    const name = `${item.name} ${item.tns?.length ? `(${item.tns[0]})` : ''} ${item.alia?.length ? `(${item.alia[0]})` : ''}`
+                    const artist = item.ar.map(item => item.name).join('/') + '-' + item.al.name
+                    const cover = convertHttpToHttps(item.al.picUrl)
+                    return <SongItem cover={cover} title={name} artist={artist} />
+                }}
+            />
+        </>
+        </LevelScrollView>
+    )
+})
 export const useMiniPlayer = () => {
     return useContext(MiniPlayerContext);
 };
@@ -310,7 +390,17 @@ const styles = StyleSheet.create({
     content: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
+    },
+    row: {
+        width: '75%',
+        backgroundColor: 'red',
+        padding: 8,
+        paddingRight: 0,
+    },
+    rowItem: {
+        width: rowWidth,
+        flexDirection: 'row',
+        padding: 8,
     },
     cover: {
         width: 40,
@@ -320,6 +410,7 @@ const styles = StyleSheet.create({
     info: {
         flex: 1,
         marginHorizontal: 12,
+        width: '100%',
     },
     title: {
         color: '#fff',
@@ -334,7 +425,9 @@ const styles = StyleSheet.create({
     controls: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 16,
+        gap: 12,
+        padding: 8,
+        paddingHorizontal: 16,
     },
     playButton: {
         width: SIZE,
