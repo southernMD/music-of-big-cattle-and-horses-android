@@ -20,6 +20,7 @@ import Animated, {
   useDerivedValue,
   withTiming,
   cancelAnimation,
+  runOnUI,
 } from "react-native-reanimated";
 import LoadingPlaceholder from "@/components/LoadingPlaceholder";
 
@@ -51,13 +52,17 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
   startIndex = 0
 }, ref) => {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
-
+  console.log("LevelScrollView刷新了");
+  
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
   const isHorizontal = useSharedValue(true);
 
   useEffect(() => {
-    scrollTo(scrollRef, startIndex * itemWidth, 0, false);
+    runOnUI(() => {
+      'worklet';
+      scrollTo(scrollRef, startIndex * itemWidth, 0, false);
+    })();
     console.log("执行 scrollTo:", startIndex * itemWidth);
     horizontalScrollX.value = startIndex * itemWidth;
   }, [children[1]]);
