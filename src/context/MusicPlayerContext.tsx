@@ -19,7 +19,7 @@ import { HorizontaSlidingGesture } from '@/components/HorizontaSlidingGesture';
 import StickBarScrollingFlatList from '@/components/StickBarScrollingFlatList/StickBarScrollingFlatList';
 import { FlatList } from 'react-native-gesture-handler';
 import LevelScrollView, { LevelScrollViewRef } from '@/components/StickBarScrollingFlatList/LevelScrollView';
-import { useSharedValue } from 'react-native-reanimated';
+import { runOnUI, scrollTo, useSharedValue } from 'react-native-reanimated';
 interface MiniPlayerProps {
     title: string;
     artist: string;
@@ -333,10 +333,14 @@ const MusicPlayerMiniFlatList = memo(() => {
     const levelScrollViewRef = useRef<LevelScrollViewRef>(null)
     const horizontalScrollX = useSharedValue(0);
     console.log('我刷新了MusicPlayerMiniFlatList');
+    
+    // 添加一个状态来控制显示/隐藏
+    const [isVisible, setIsVisible] = useState(true);
 
     const musicPlayer = useSnapshot(useMusicPlayer)
 
     const playingSongNearly = useMemo(() => { 
+        console.log(' 我刷新了playingSongNearly');
         const index = useMusicPlayer.playingIndex
         const length = useMusicPlayer.playingList.length;
         const prevIndex = (index - 1 + length) % length;
@@ -346,7 +350,37 @@ const MusicPlayerMiniFlatList = memo(() => {
             useMusicPlayer.playingList[index],
             useMusicPlayer.playingList[nextIndex]
         ];
-    }, [musicPlayer.playingId,musicPlayer.playingIndex])
+    }, [musicPlayer.playingId, musicPlayer.playingIndex])
+
+    const FinishHorizontalScrollHandle = (newIndex:number, oldIndex:number) => {
+        if(newIndex === oldIndex) return;
+        
+        // TODO: 非最佳解决办法，只是展示屏蔽了切换显示
+        setIsVisible(false);
+        
+        const index = musicPlayer.playingList.findIndex(item=>item.id === playingSongNearly[newIndex].id);
+        if(index === -1) {
+            setIsVisible(true);
+            return;
+        }
+        
+        if(playingSongNearly[newIndex].id === playingSongNearly[oldIndex].id) {
+            console.log('same song', levelScrollViewRef.current?.scrollRef);
+            levelScrollViewRef.current?.scrollRef!.current?.scrollTo({ x: 1 * rowWidth, y: 0, animated: false });
+            horizontalScrollX.value = 1 * rowWidth;
+            setIsVisible(true);
+            return;
+        }
+        
+        // 更新播放索引和ID
+        useMusicPlayer.playingIndex = index;
+        useMusicPlayer.playingId = playingSongNearly[newIndex].id;
+        
+        // 在下一帧再显示内容
+        requestAnimationFrame(() => {
+            setIsVisible(true);
+        });
+    }
 
     return (
         <LevelScrollView
@@ -357,6 +391,7 @@ const MusicPlayerMiniFlatList = memo(() => {
             itemWidth={rowWidth}
             blockLen={3}
             startIndex={1}
+            FinishHorizontalScrollHandle={FinishHorizontalScrollHandle}
         >
            <></>
            <>
@@ -365,6 +400,7 @@ const MusicPlayerMiniFlatList = memo(() => {
                 data={playingSongNearly}
                 horizontal
                 showsHorizontalScrollIndicator={false}
+                style={{ opacity: isVisible ? 1 : 0 }} // 控制可见性
                 renderItem={({item}) => {
                     const name = `${item.name} ${item.tns?.length ? `(${item.tns[0]})` : ''} ${item.alia?.length ? `(${item.alia[0]})` : ''}`
                     const artist = item.ar.map(item => item.name).join('/') + '-' + item.al.name

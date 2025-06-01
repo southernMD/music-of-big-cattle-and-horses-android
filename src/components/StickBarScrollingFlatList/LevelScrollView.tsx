@@ -39,6 +39,7 @@ interface Props {
   panGesture?:PanGesture
   itemWidth?:number
   startIndex?:number
+  FinishHorizontalScrollHandle?:(newindex:number,oldIndex:number)=>void
 }
 
 const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
@@ -49,7 +50,8 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
   horizontalScrollX,
   panGesture,
   itemWidth = screenWidth,
-  startIndex = 0
+  startIndex = 0,
+  FinishHorizontalScrollHandle
 }, ref) => {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   console.log("LevelScrollView刷新了");
@@ -98,7 +100,8 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
       const offsetX = -e.translationX; // 用户滑动的距离（右滑为负）
       const threshold = itemWidth * 0.2; // 比原来的“0.5页面”更灵敏
 
-      let nextIndex = horizontalScrollX.value / itemWidth;
+      let oldIndex = horizontalScrollX.value / itemWidth;
+      let nextIndex = oldIndex;
       console.log(horizontalScrollX.value,"horizontalScrollX.value");
       
       if (offsetX > threshold) {
@@ -118,7 +121,9 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
         { duration: 300 }, // 动画时长
         (isFinished) => {
           if (isFinished) {
-            // console.log('动画结束');
+            if(FinishHorizontalScrollHandle) {
+              runOnJS(FinishHorizontalScrollHandle)(nextIndex,oldIndex); // 使用 runOnJS 包装函数调用
+            }
             isHorizontal.value = true; 
           }
         }
