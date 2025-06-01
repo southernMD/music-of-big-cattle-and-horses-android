@@ -94,10 +94,10 @@ export const playlistTrackAll= (id:string | number,limit?:string | number,offset
 }
 
 //一首歌的url
-export const SongUrl = (id:number,level:string = 'standard')=>{
+export const SongUrl = (id:number,controller?: AbortController,level:string = 'standard')=>{
     return fetch<SongUrlType>(`/song/url/v1?id=${id}&level=${level}`,{
         method:'POST',
-    })
+    },true,controller)
 }
 
 //歌曲们的详情

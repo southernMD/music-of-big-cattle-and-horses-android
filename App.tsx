@@ -1,3 +1,6 @@
+/*
+ * @Description: create by southernMD
+ */
 /**
  * Sample React Native App
  * https://github.com/facebook/react-native
@@ -18,7 +21,8 @@ import { LoadingMaodalProvider, useLoadingModal } from '@/context/LoadingModalCo
 import { MiniPlayerProvider, useMiniPlayer } from '@/context/MusicPlayerContext';
 import { NavigationContainerRef } from '@react-navigation/native';
 import { RootStackParamList } from '@/types/NavigationType';
-
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ThemeProvider } from '@/context/ThemeContext';
 if (__DEV__) {
   require("./ReactotronConfig");
 }
@@ -53,30 +57,34 @@ function App(): React.JSX.Element {
     navigationRef.current?.navigate('MusicPlayer');
   };
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <MiniPlayerProvider currentRoute={currentRoute} openMusicPlayer={openMusicPlayer}>
-        <LoadingMaodalProvider>
-          <FullScreenImageProvider>
-            <Provider>
-              <Navigation 
-              ref={navigationRef}
-              linking={{
-                enabled: 'auto',
-                prefixes: ['mychat://'],
-              }}
-              theme={theme}
-              onReady={() => {
-                setCurrentRoute(navigationRef.current?.getCurrentRoute());
-              }}
-              onStateChange={() => {
-                setCurrentRoute(navigationRef.current?.getCurrentRoute());
-              }}
-              />
-            </Provider>
-          </FullScreenImageProvider>
-        </LoadingMaodalProvider>
-      </MiniPlayerProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ThemeProvider>
+          <MiniPlayerProvider currentRoute={currentRoute} openMusicPlayer={openMusicPlayer}>
+            <LoadingMaodalProvider>
+              <FullScreenImageProvider>
+                <Provider>
+                  <Navigation 
+                    ref={navigationRef}
+                    linking={{
+                      enabled: 'auto',
+                      prefixes: ['mychat://'],
+                    }}
+                    theme={theme}
+                    onReady={() => {
+                      setCurrentRoute(navigationRef.current?.getCurrentRoute());
+                    }}
+                    onStateChange={() => {
+                      setCurrentRoute(navigationRef.current?.getCurrentRoute());
+                    }}
+                  />
+                </Provider>
+              </FullScreenImageProvider>
+            </LoadingMaodalProvider>
+          </MiniPlayerProvider>
+        </ThemeProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 

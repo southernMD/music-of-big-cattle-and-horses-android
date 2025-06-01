@@ -8,6 +8,7 @@ import {name as appName} from './app.json';
 import { backgroundPlayMusic } from '@/backgroundTasks/NativeMusicPlayer';
 import { qrCodeBackground } from '@/backgroundTasks/ScanfQrcodeBackTask';
 import { qrCodeNativeBackground } from '@/backgroundTasks/QrNativeBackTask';
+import 'react-native-get-random-values'
 
 AppRegistry.registerComponent(appName, () => App);
 AppRegistry.registerHeadlessTask('backgroundPlayMusic', () => backgroundPlayMusic);

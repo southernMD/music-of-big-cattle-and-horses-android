@@ -8,12 +8,14 @@ import { playlistDetail, SongDetail } from '@/api';
 import { Playlist } from '@/types/PlayList';
 import { Song } from '@/types/Song';
 import { useMusicPlayer } from '@/store';
+import { debounce } from '@/utils/Debounce';
 
 export default function PlayListDetail() {
     const route = useRoute<RouteProp<PlayListDetailStackParamList>>();
     const { id, name, type, createId } = useMemo(() => route.params, [route.params]);
-    const [playListSongs, setPlayListSongs] = useState<Playlist['tracks']>([])
-    const [playlistDetailMsg, setPlayListDetailMsg] = useState<Playlist>()
+    const [playListSongs, setPlayListSongs] = useState<Playlist['tracks']>([]);
+    const [playlistDetailMsg, setPlayListDetailMsg] = useState<Playlist>();
+    
     useEffect(() => {
         playlistDetail(id).then((res) => {
             setPlayListSongs(res.playlist.tracks)
@@ -21,7 +23,8 @@ export default function PlayListDetail() {
         })
     },[])
 
-    const playSong = (song:Song,type: 'dj' | 'Album')=>{
+    // 原始的 playSong 函数
+    const handlePlaySong = (song: Song, type: 'dj' | 'Album') => {
         console.log('Pressed song:', song.name)
         //以下实现的是将歌曲添加到播放列表并播放
         if(true){
@@ -44,6 +47,11 @@ export default function PlayListDetail() {
             useMusicPlayer.PlayingListId = id
         }
     }
+    
+    // 使用 useCallback 和 debounce 创建防抖版本的 playSong
+    // 设置 300ms 的防抖时间，并且设置为非立即执行模式
+    const playSong = debounce(handlePlaySong, 300, false)
+
     return (
         <>
             {playlistDetailMsg ?
@@ -51,7 +59,7 @@ export default function PlayListDetail() {
                     type={type}
                     playlistDetailMsg={playlistDetailMsg}
                     songs={playListSongs}
-                    onSongPress={playSong}></SongList>
+                    onSongPress={playSong} />
                 : ''}
         </>
     );

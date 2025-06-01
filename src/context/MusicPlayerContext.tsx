@@ -12,7 +12,7 @@ import Sound from 'react-native-sound';
 import FastImage from 'react-native-fast-image';
 import Svg, { Circle } from 'react-native-svg';
 import { watch } from 'valtio/utils';
-import { usePersistentStore } from '@/hooks/usePersistentStore';
+import { getItem, usePersistentStore } from '@/hooks/usePersistentStore';
 import ImageColors from 'react-native-image-colors';
 import { AndroidImageColors } from 'react-native-image-colors/lib/typescript/types';
 import { HorizontaSlidingGesture } from '@/components/HorizontaSlidingGesture';
@@ -20,6 +20,12 @@ import StickBarScrollingFlatList from '@/components/StickBarScrollingFlatList/St
 import { FlatList } from 'react-native-gesture-handler';
 import LevelScrollView, { LevelScrollViewRef } from '@/components/StickBarScrollingFlatList/LevelScrollView';
 import { runOnUI, scrollTo, useSharedValue } from 'react-native-reanimated';
+import PlayingSongList from '@/components/PlayingSongList';
+import { createRef } from 'react';
+import BottomSheet from '@gorhom/bottom-sheet';
+import { getCryptoRandomInt } from '@/utils/getCryptoRandomInt';
+import { PLAYING_LIST_TYPE } from '@/constants/values';
+
 interface MiniPlayerProps {
     title: string;
     artist: string;
@@ -58,8 +64,12 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const { width: screenWidth } = Dimensions.get('window');
 const rowWidth = screenWidth * 0.75; // styles.row 的宽度
 
+// 创建一个全局引用，这样可以从任何地方控制底部弹出层
+export const playingSongListRef = createRef<BottomSheet>();
+
 export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRoute?: ParamListRoute<any>, openMusicPlayer: () => void }> = memo(({ children, currentRoute, openMusicPlayer }) => {
     const isDark = usePersistentStore<boolean>('isDark');
+    const playingType = usePersistentStore<PLAYING_LIST_TYPE>('playingType', PLAYING_LIST_TYPE.LOOP);
     const [isVisible, setIsVisible] = useState(false);
     const [title, setTitle] = useState('好音乐，用牛马');
     const [artist, setArtist] = useState('');
@@ -68,6 +78,7 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
     const [safeNeedTransition, setSafeNeedTransition] = useState(false);
     const prevNeedTransitionRef = useRef<boolean>(false);
     const [durationTime, setDurationTime] = useState(0)
+    let playLock = false
     const [currentTime, setCurrentTime] = useState(0)
     useEffect(() => {
         console.log(currentRoute);
@@ -131,89 +142,178 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
 
     const musicPlayer = useSnapshot(useMusicPlayer);
     const soundRef = useRef<Sound | null>(null); // 添加 Sound 的 ref
+    const controllerRef = useRef<AbortController | null>(null); // 添加 AbortController 的 ref
+    const currentLoadingIdRef = useRef<number>(-1); // 跟踪当前正在加载的歌曲ID
+    const playLockRef = useRef<boolean>(false); // 使用 ref 来管理锁定状态
+    
+    // 创建一个安全的释放函数
+    const safeReleaseSoundRef = useCallback(() => {
+        if (soundRef.current) {
+            const sound = soundRef.current;
+            soundRef.current = null; // 立即清空引用
+            
+            // 停止并释放
+            sound.stop(() => {
+                sound.release();
+                console.log('Sound safely released');
+            });
+        }
+    }, []);
 
     useEffect(() => {
         if (musicPlayer.playingId <= 0) return;
+        
+        console.log(`开始加载歌曲: ${musicPlayer.playingId}`);
+        
+        // 记录当前正在加载的歌曲ID
+        const currentLoadingId = musicPlayer.playingId;
+        currentLoadingIdRef.current = currentLoadingId;
 
-        // 销毁旧 sound
-        if (soundRef.current) {
-            soundRef.current.stop(() => {
-                soundRef.current?.release();
-                soundRef.current = null;
-            });
+        // 设置锁
+        playLockRef.current = true;
+        
+        // 取消之前的请求
+        if (controllerRef.current) {
+            console.log('取消之前的请求');
+            controllerRef.current.abort();
+            controllerRef.current = null;
         }
-
-        SongUrl(musicPlayer.playingId).then(({ data }) => {
-            const [{ url }] = data;
-            const httpSong = convertHttpToHttps(url);
-            console.log(httpSong, 'songURl');
-
-            const sound = new Sound(httpSong, undefined, (error) => {
-                if (error) {
-                    console.error('Failed to load the sound', error);
+        
+        // 释放之前的音频
+        safeReleaseSoundRef();
+        
+        // 创建新的控制器
+        const controller = new AbortController();
+        controllerRef.current = controller;
+        
+        // 创建一个标记，表示这个加载过程是否已经被取消
+        let isCancelled = false;
+        
+        SongUrl(currentLoadingId, controller)
+            .then(({ data }) => {
+                // 如果请求已被取消或ID已更改，不继续处理
+                if (controller.signal.aborted || currentLoadingId !== currentLoadingIdRef.current) {
+                    console.log('请求已取消或ID已更改，不加载音频');
+                    playLockRef.current = false;
+                    return;
+                }
+                
+                controllerRef.current = null;
+                const [{ url }] = data;
+                const httpSong = convertHttpToHttps(url);
+                console.log(httpSong, 'songURl');
+                
+                // 在创建Sound之前再次检查
+                if (currentLoadingId !== currentLoadingIdRef.current) {
+                    console.log('ID已更改，不创建Sound实例');
+                    playLockRef.current = false;
                     return;
                 }
 
-                soundRef.current = sound;
-
-                const duration = sound.getDuration();
-                console.log('音乐总时长:', duration, '秒');
-                setDurationTime(duration * 1000)
-                const playingSong = useMusicPlayer.playingList[useMusicPlayer.playingIndex]
-                const playingSongPrivileges = useMusicPlayer.playingPrivileges[useMusicPlayer.playingIndex]
-                const name = `${playingSong.name} ${playingSong.tns?.length ? `(${playingSong.tns[0]})` : ''} ${playingSong.alia?.length ? `(${playingSong.alia[0]})` : ''}`
-                const artist = playingSong.ar.map(item => item.name).join('/') + '-' + playingSong.al.name
-                setMiniPlayer(name, artist, 0, convertHttpToHttps(playingSong.al.picUrl))
-                useMusicPlayer.playStatus = 'play'
-                sound.play((success) => {
-                    if (success) {
-                        clearInterval(interval);
-                        setProgress(100)
-                        console.log('Sound played successfully');
-                    } else {
-                        console.log('Sound playback failed');
-                    }
-                    useMusicPlayer.playStatus = 'stop'
-                    // 播放完成后销毁
-                    sound.stop(() => {
+                const sound = new Sound(httpSong, undefined, (error) => {
+                    // 检查这个Sound实例是否还应该继续
+                    if (isCancelled || currentLoadingId !== currentLoadingIdRef.current) {
+                        console.log('Sound加载回调：已取消或ID已更改，释放实例');
                         sound.release();
-                        if (soundRef.current === sound) {
-                            soundRef.current = null;
-                            useMusicPlayer.playingId = -1
+                        playLockRef.current = false;
+                        return;
+                    }
+                    
+                    if (error) {
+                        console.error('Failed to load the sound', error);
+                        playLockRef.current = false;
+                        return;
+                    }
+                    
+                    // 再次确保没有其他实例
+                    safeReleaseSoundRef();
+                    
+                    // 设置当前实例
+                    soundRef.current = sound;
+
+                    const duration = sound.getDuration();
+                    console.log('音乐总时长:', duration, '秒');
+                    setDurationTime(duration * 1000);
+                    
+                    const playingSong = useMusicPlayer.playingList[useMusicPlayer.playingIndex];
+                    const name = `${playingSong.name} ${playingSong.tns?.length ? `(${playingSong.tns[0]})` : ''} ${playingSong.alia?.length ? `(${playingSong.alia[0]})` : ''}`;
+                    const artist = playingSong.ar.map(item => item.name).join('/') + '-' + playingSong.al.name;
+                    setMiniPlayer(name, artist, 0, convertHttpToHttps(playingSong.al.picUrl));
+                    
+                    // 创建定时器
+                    let interval: NodeJS.Timeout | null = setInterval(() => {
+                        // 检查 sound 是否还有效
+                        if (!soundRef.current || soundRef.current !== sound) {
+                            if (interval) {
+                                clearInterval(interval);
+                                interval = null;
+                            }
+                            return;
+                        }
+                        
+                        sound.getCurrentTime((currentTime) => {
+                            setProgress(currentTime / duration * 100);
+                            setCurrentTime(currentTime * 1000);
+                        });
+                    }, 200);
+                    
+                    // 播放音频
+                    useMusicPlayer.playStatus = 'play';
+                    sound.play((success) => {
+                        // 如果这个实例已不是当前实例，不处理
+                        if (soundRef.current !== sound) {
+                            return;
+                        }
+                        
+                        useMusicPlayer.playStatus = 'stop';
+                        
+                        if (success) {
+                            console.log('Sound played successfully');
+                            
+                            // 根据播放模式处理歌曲完成后的行为
+                            handleSongCompletion(interval);
+                        } else {
+                            console.log('Sound playback failed');
+                            
+                            // 清理
+                            if (interval) {
+                                clearInterval(interval);
+                                interval = null;
+                            }
                         }
                     });
+                    
+                    // 释放锁
+                    playLockRef.current = false;
+                    
+                    // 清理函数
+                    return () => {
+                        if (interval) {
+                            clearInterval(interval);
+                            interval = null;
+                        }
+                    };
                 });
-
-                const interval = setInterval(() => {
-                    sound.getCurrentTime((currentTime) => {
-                        // console.log('当前播放进度:', currentTime / duration * 100);
-                        setProgress(currentTime / duration * 100)
-                        setCurrentTime(currentTime * 1000)
-                    });
-                }, 200);
-
-                sound.setNumberOfLoops(0);
-
-                // 清理 interval 定时器
-                const clearAll = () => {
-                    clearInterval(interval);
-                };
-
-                // 防止组件卸载时定时器泄露
-                return clearAll;
+            })
+            .catch(error => {
+                if (error.message !== 'AbortError') {
+                    console.error('Error fetching song URL:', error);
+                }
+                playLockRef.current = false;
             });
-        });
+        
+        // 返回清理函数
         return () => {
-            if (soundRef.current) {
-                soundRef.current.stop(() => {
-                    soundRef.current?.release();
-                    soundRef.current = null;
-                    useMusicPlayer.playingId = -1
-                    useMusicPlayer.playStatus = 'stop'
-                });
+            // 标记当前加载过程已取消
+            isCancelled = true;
+            
+            // 如果ID已更改，取消当前请求
+            if (currentLoadingId === currentLoadingIdRef.current && controllerRef.current) {
+                controllerRef.current.abort();
+                controllerRef.current = null;
             }
         };
-    }, [musicPlayer.playingId]);
+    }, [musicPlayer.playingId, safeReleaseSoundRef]);
 
     useEffect(() => {
         if (useMusicPlayer.playingList.length === 0) {
@@ -222,20 +322,28 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
             showMiniPlayer()
         }
     }, [musicPlayer.playingList])
-    const changeSoundPlaying = () => {
+    const changeSoundPlaying = useCallback(() => {
+        console.log(playLockRef.current, "playLock");
+        
+        // 如果没有音频实例但有播放列表，加载当前歌曲
         if (!soundRef.current && useMusicPlayer.playingList[useMusicPlayer.playingIndex]) {
-            useMusicPlayer.playingId = useMusicPlayer.playingList[useMusicPlayer.playingIndex].id
-            return
+            useMusicPlayer.playingId = useMusicPlayer.playingList[useMusicPlayer.playingIndex].id;
+            return;
         }
+        
+        // 如果锁定中，不执行操作
+        if (playLockRef.current) return;
+        
+        // 播放/暂停切换
         if (soundRef.current!.isPlaying()) {
             soundRef.current!.pause(() => {
-                useMusicPlayer.playStatus = 'stop'
-            })
+                useMusicPlayer.playStatus = 'stop';
+            });
         } else {
-            soundRef.current!.play()
-            useMusicPlayer.playStatus = 'play'
+            soundRef.current!.play();
+            useMusicPlayer.playStatus = 'play';
         }
-    }
+    }, []);
 
     useEffect(() => {
         ImageColors.getColors(cover, { fallback: '#000000' }).then((colors) => {
@@ -249,13 +357,106 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
         openMusicPlayer()
     }
 
+    // 打开播放列表
+    const openPlayingSongList = useCallback(() => {
+        playingSongListRef.current?.expand();
+    }, []);
+
+    // 修改 handleSongCompletion 函数，使用 async/await 更清晰
+    const handleSongCompletion = async (interval: NodeJS.Timeout | null) => {
+        // 清理定时器
+        if (interval) {
+            clearInterval(interval);
+        }
+        
+        if (useMusicPlayer.playingList.length === 0) return;
+        if (!soundRef.current) return;
+        
+        // 获取当前播放模式
+        const currentPlayingType = await getItem('playingType');
+        
+        // 判断是否是单曲循环或只有一首歌的情况
+        const isOneSongLoop = currentPlayingType === PLAYING_LIST_TYPE.LOOP_ONE || 
+            (currentPlayingType === PLAYING_LIST_TYPE.LOOP && useMusicPlayer.playingList.length === 1) ||
+            (currentPlayingType === PLAYING_LIST_TYPE.RANDOM && useMusicPlayer.playingList.length === 1);
+        
+        const playingList = useMusicPlayer.playingList;
+        const currentIndex = useMusicPlayer.playingIndex;
+        
+        console.log("播放完成，当前模式:", currentPlayingType);
+        
+        // 根据播放模式处理
+        if (isOneSongLoop) {
+            // 单曲循环：重置播放进度并重新播放
+            soundRef.current.setCurrentTime(0);
+            
+            // 创建新的定时器
+            const newInterval = setInterval(() => {
+                if (soundRef.current) {
+                    soundRef.current.getCurrentTime((time) => {
+                        const duration = soundRef.current!.getDuration();
+                        setProgress(time / duration * 100);
+                        setCurrentTime(time * 1000);
+                    });
+                } else {
+                    clearInterval(newInterval);
+                }
+            }, 200);
+            
+            // 播放并设置回调
+            soundRef.current.play(async (success) => {
+                if (soundRef.current) {
+                    useMusicPlayer.playStatus = 'stop';
+                    
+                    if (success) {
+                        console.log('循环播放完成');
+                        await handleSongCompletion(newInterval);
+                    } else {
+                        console.log('循环播放失败');
+                        clearInterval(newInterval);
+                    }
+                }
+            });
+            
+            useMusicPlayer.playStatus = 'play';
+        } else {
+            // 非单曲循环：释放资源
+            const sound = soundRef.current;
+            soundRef.current = null;
+            
+            sound.release();
+            setProgress(100);
+            
+            // 根据播放模式选择下一首
+            if (currentPlayingType === PLAYING_LIST_TYPE.LOOP) {
+                // 列表循环
+                const nextIndex = (currentIndex + 1) % playingList.length;
+                useMusicPlayer.playingIndex = nextIndex;
+                useMusicPlayer.playingId = playingList[nextIndex].id;
+            } else if (currentPlayingType === PLAYING_LIST_TYPE.RANDOM) {
+                // 随机播放
+                let nextRandomIndex;
+                if (playingList.length > 1) {
+                    do {
+                        nextRandomIndex = getCryptoRandomInt(0, playingList.length - 1);
+                    } while (nextRandomIndex === currentIndex);
+                } else {
+                    nextRandomIndex = 0;
+                }
+                
+                useMusicPlayer.playingIndex = nextRandomIndex;
+                useMusicPlayer.playingId = playingList[nextRandomIndex].id;
+            }
+        }
+    };
+    
     const contextValue: MiniPlayerContextValue = {
         setMiniPlayer,
         hideMiniPlayer,
         updateProgress,
         showMiniPlayer,
         getMiniPlayer,
-        changeSoundPlaying
+        changeSoundPlaying,
     };
 
 
@@ -263,7 +464,7 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
         <MiniPlayerContext.Provider value={contextValue}>
             {children}
             {isVisible && (
-                <Pressable onPress={openMiniPlayer}>
+                <Pressable onPress={openMusicPlayer}>
                     <View style={[styles.container, { bottom: safeNeedTransition ? FOOTER_BAR_HEIGHT : 0 }]}>
                         <View style={styles.content}>
                             <MusicPlayerMiniFlatList></MusicPlayerMiniFlatList>
@@ -301,7 +502,7 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
                                     </View>
                                 </TouchableOpacity>
 
-                                <TouchableOpacity style={styles.listButton}>
+                                <TouchableOpacity style={styles.listButton} onPress={openPlayingSongList}>
                                     <List color="#fff" size={24} />
                                 </TouchableOpacity>
                             </View>
@@ -309,6 +510,9 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
                     </View>
                 </Pressable>
             )}
+            
+            {/* 集成 PlayingSongList 组件 */}
+            <PlayingSongList ref={playingSongListRef} />
         </MiniPlayerContext.Provider>
     );
 });
