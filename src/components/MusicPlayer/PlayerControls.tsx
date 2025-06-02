@@ -1,22 +1,27 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Repeat, SkipBack, Play, SkipForward, List, Pause } from 'lucide-react-native';
+import { SkipBack, Play, SkipForward, List, Pause } from 'lucide-react-native';
 import { useMusicPlayer } from '@/store';
-import { usePersistentStore } from '@/hooks/usePersistentStore';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useSnapshot } from 'valtio'
 import { isLightColor } from '@/utils/isLightColor';
-import { useMiniPlayer } from '@/context/MusicPlayerContext';
+import { playingSongListRef, useMiniPlayer } from '@/context/MusicPlayerContext';
 import { dayjsMMSS } from '@/utils/dayjs';
+import { PlayModeToggle } from './PlayModeToggle';
+
 export function PlayerControls() {
   const musicPlayer = useSnapshot(useMusicPlayer)
   const fontColor = useMemo(() => {
     return isLightColor(musicPlayer.playingSongAlBkColor.average!) ? musicPlayer.playingSongAlBkColor.darkVibrant : musicPlayer.playingSongAlBkColor.lightMuted
   }, [musicPlayer.playingSongAlBkColor.average])
 
-  const { getMiniPlayer,changeSoundPlaying } = useMiniPlayer()
+  const { getMiniPlayer, changeSoundPlaying, playNext, playPrev } = useMiniPlayer()
   const { currentTime, progress, durationTime } = useMemo(() => {
     return getMiniPlayer()
   }, [getMiniPlayer()])
+
+  const openPlayingList = useCallback(() => {
+    playingSongListRef.current?.snapToIndex(0)
+  },[])
   return (
     <View style={[styles.container, { backgroundColor: musicPlayer.playingSongAlBkColor.average }]}>
       <View style={styles.progressContainer}>
@@ -30,10 +35,14 @@ export function PlayerControls() {
       </View>
 
       <View style={styles.controls}>
-        <TouchableOpacity style={styles.sideButton}>
-          <Repeat color={fontColor} size={24} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.controlButton}>
+        <View style={styles.sideButton}>
+          <PlayModeToggle messageAlert={true} showLabel={false} size={24} color={fontColor} style={{
+            iconContainer: {
+              backgroundColor: 'rgba(0,0,0,0)'
+            }
+          }} />
+        </View>
+        <TouchableOpacity style={styles.controlButton} onPress={playPrev}>
           <SkipBack color={fontColor} size={32} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.playButton} onPress={changeSoundPlaying}>
@@ -44,10 +53,10 @@ export function PlayerControls() {
           }
           
         </TouchableOpacity>
-        <TouchableOpacity style={styles.controlButton}>
+        <TouchableOpacity style={styles.controlButton} onPress={playNext}>
           <SkipForward color={fontColor} size={32} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.sideButton}>
+        <TouchableOpacity style={styles.sideButton} onPress={openPlayingList}>
           <List color={fontColor} size={24} />
         </TouchableOpacity>
       </View>

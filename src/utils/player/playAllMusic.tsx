@@ -34,6 +34,6 @@ export const playAllMusic = async ({ willPlayId,willPlayListId }:PlayAllMusicPro
     }
     const index = willPlayId ? useMusicPlayer.playingList.findIndex(item => item.id === willPlayId) : 0
     useMusicPlayer.playingIndex = index
-    useMusicPlayer.playingId = willPlayId!
-    return 
+    useMusicPlayer.playingId = willPlayId ? willPlayId : useMusicPlayer.playingList[0].id;
+    return;
 };

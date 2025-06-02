@@ -1,36 +1,28 @@
-import React, { createContext, useState, useContext, memo, useEffect, RefObject, useMemo, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, InteractionManager, Pressable, Dimensions } from 'react-native';
+import React, { createContext, useState, useContext, memo, useEffect, useMemo, useRef, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Pressable, Dimensions } from 'react-native';
 import { List, Pause, Play } from 'lucide-react-native';
-import { NavigationContainerRef, ParamListRoute, useRoute } from '@react-navigation/native';
-import { RootStackParamList } from '@/types/NavigationType';
+import { ParamListRoute } from '@react-navigation/native';
 import { FOOTER_BAR_HEIGHT, NEED_FOOTER_BAR_ROUTE } from '@/constants/bar';
-import { subscribe, useSnapshot } from 'valtio';
+import { useSnapshot } from 'valtio';
 import { useMusicPlayer } from '@/store';
 import { SongUrl } from '@/api';
 import { convertHttpToHttps } from '@/utils/fixHttp';
 import Sound from 'react-native-sound';
 import FastImage from 'react-native-fast-image';
 import Svg, { Circle } from 'react-native-svg';
-import { watch } from 'valtio/utils';
 import { getItem, usePersistentStore } from '@/hooks/usePersistentStore';
 import ImageColors from 'react-native-image-colors';
 import { AndroidImageColors } from 'react-native-image-colors/lib/typescript/types';
-import { HorizontaSlidingGesture } from '@/components/HorizontaSlidingGesture';
-import StickBarScrollingFlatList from '@/components/StickBarScrollingFlatList/StickBarScrollingFlatList';
 import { FlatList } from 'react-native-gesture-handler';
 import LevelScrollView, { LevelScrollViewRef } from '@/components/StickBarScrollingFlatList/LevelScrollView';
-import { runOnUI, scrollTo, useSharedValue } from 'react-native-reanimated';
+import { useSharedValue } from 'react-native-reanimated';
 import PlayingSongList from '@/components/PlayingSongList';
 import { createRef } from 'react';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { getCryptoRandomInt } from '@/utils/getCryptoRandomInt';
 import { PLAYING_LIST_TYPE } from '@/constants/values';
-
-interface MiniPlayerProps {
-    title: string;
-    artist: string;
-    progress?: number;
-}
+import { useAppTheme } from '@/context/ThemeContext';
+import { getCurrentPlayMode } from '@/utils/playModeUtils';
 
 interface MiniPlayerContextValue {
     setMiniPlayer: (title: string, artist: string, progress: number, cover: string) => void;
@@ -46,6 +38,8 @@ interface MiniPlayerContextValue {
     };
     updateProgress: (progress: number) => void;
     changeSoundPlaying: () => void;
+    playNext: () => void;
+    playPrev: () => void;
 }
 
 const MiniPlayerContext = createContext<MiniPlayerContextValue>({
@@ -55,6 +49,8 @@ const MiniPlayerContext = createContext<MiniPlayerContextValue>({
     getMiniPlayer: () => { return { title: '', artist: '', progress: 0, cover: '', currentTime: 0, durationTime: 0 } },
     showMiniPlayer: () => { },
     changeSoundPlaying: () => { },
+    playNext: () => { },
+    playPrev: () => { },
 });
 
 const SIZE = 25;
@@ -68,8 +64,8 @@ const rowWidth = screenWidth * 0.75; // styles.row 的宽度
 export const playingSongListRef = createRef<BottomSheet>();
 
 export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRoute?: ParamListRoute<any>, openMusicPlayer: () => void }> = memo(({ children, currentRoute, openMusicPlayer }) => {
+    const theme = useAppTheme(); // 获取主题
     const isDark = usePersistentStore<boolean>('isDark');
-    const playingType = usePersistentStore<PLAYING_LIST_TYPE>('playingType', PLAYING_LIST_TYPE.LOOP);
     const [isVisible, setIsVisible] = useState(false);
     const [title, setTitle] = useState('好音乐，用牛马');
     const [artist, setArtist] = useState('');
@@ -78,7 +74,6 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
     const [safeNeedTransition, setSafeNeedTransition] = useState(false);
     const prevNeedTransitionRef = useRef<boolean>(false);
     const [durationTime, setDurationTime] = useState(0)
-    let playLock = false
     const [currentTime, setCurrentTime] = useState(0)
     useEffect(() => {
         console.log(currentRoute);
@@ -160,6 +155,7 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
         }
     }, []);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (musicPlayer.playingId <= 0) return;
         
@@ -238,6 +234,9 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
                     const playingSong = useMusicPlayer.playingList[useMusicPlayer.playingIndex];
                     const name = `${playingSong.name} ${playingSong.tns?.length ? `(${playingSong.tns[0]})` : ''} ${playingSong.alia?.length ? `(${playingSong.alia[0]})` : ''}`;
                     const artist = playingSong.ar.map(item => item.name).join('/') + '-' + playingSong.al.name;
+                    useMusicPlayer.playingName = name;
+                    useMusicPlayer.playingAl = {id:playingSong.al.id,name:playingSong.al.name};
+                    useMusicPlayer.playingAr = playingSong.ar.map(item => ({id:item.id,name:item.name}));
                     setMiniPlayer(name, artist, 0, convertHttpToHttps(playingSong.al.picUrl));
                     
                     // 创建定时器
@@ -352,14 +351,18 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
         });
     }, [cover])
 
-    const openMiniPlayer = () => {
+    const handleOpenMusicPlayer = () => {
         hideMiniPlayer()
         openMusicPlayer()
     }
 
     // 打开播放列表
     const openPlayingSongList = useCallback(() => {
-        playingSongListRef.current?.expand();
+        // 直接使用snapToIndex(0)来打开底部表单到70%
+        // 这样避免了expand可能导致的多阶段动画问题
+        if (playingSongListRef.current) {
+            playingSongListRef.current.snapToIndex(0);
+        }
     }, []);
 
     // 修改 handleSongCompletion 函数，使用 async/await 更清晰
@@ -449,6 +452,106 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
             }
         }
     };
+
+    //播放下一首
+    const playNext = useCallback(async () => {
+        // 如果没有播放列表，直接返回
+        if (useMusicPlayer.playingList.length <= 0) return;
+        
+        // 如果正在加载中，不执行操作
+        if (playLockRef.current) return;
+        
+        const playingList = useMusicPlayer.playingList;
+        const currentIndex = useMusicPlayer.playingIndex;
+        
+        // 获取当前播放模式
+        const currentPlayingType = await getItem('playingType');
+        
+        // 如果只有一首歌，重新开始播放当前歌曲（类似单曲循环）
+        if (playingList.length === 1) {
+            if (soundRef.current) {
+                // 重置播放进度到开始
+                soundRef.current.setCurrentTime(0);
+                
+                // 如果当前暂停状态，则开始播放
+                if (!soundRef.current.isPlaying()) {
+                    soundRef.current.play();
+                    useMusicPlayer.playStatus = 'play';
+                }
+            }
+            return;
+        }
+        
+        // 释放当前音频资源
+        safeReleaseSoundRef();
+        
+        // 根据播放模式选择下一首
+        if (currentPlayingType === PLAYING_LIST_TYPE.RANDOM) {
+            // 随机播放模式：随机选择一首不同的歌
+            let nextRandomIndex;
+            do {
+                nextRandomIndex = getCryptoRandomInt(0, playingList.length - 1);
+            } while (nextRandomIndex === currentIndex && playingList.length > 1);
+            
+            useMusicPlayer.playingIndex = nextRandomIndex;
+            useMusicPlayer.playingId = playingList[nextRandomIndex].id;
+        } else {
+            // 列表循环或单曲循环：播放下一首
+            const nextIndex = (currentIndex + 1) % playingList.length;
+            useMusicPlayer.playingIndex = nextIndex;
+            useMusicPlayer.playingId = playingList[nextIndex].id;
+        }
+    }, [safeReleaseSoundRef]);
+
+    //播放上一首
+    const playPrev = useCallback(async () => {
+        // 如果没有播放列表，直接返回
+        if (useMusicPlayer.playingList.length <= 0) return;
+        
+        // 如果正在加载中，不执行操作
+        if (playLockRef.current) return;
+        
+        const playingList = useMusicPlayer.playingList;
+        const currentIndex = useMusicPlayer.playingIndex;
+        
+        // 获取当前播放模式
+        const currentPlayingType = await getItem('playingType');
+        
+        // 如果只有一首歌，重新开始播放当前歌曲（类似单曲循环）
+        if (playingList.length === 1) {
+            if (soundRef.current) {
+                // 重置播放进度到开始
+                soundRef.current.setCurrentTime(0);
+                
+                // 如果当前暂停状态，则开始播放
+                if (!soundRef.current.isPlaying()) {
+                    soundRef.current.play();
+                    useMusicPlayer.playStatus = 'play';
+                }
+            }
+            return;
+        }
+        
+        // 释放当前音频资源
+        safeReleaseSoundRef();
+        
+        // 根据播放模式选择上一首
+        if (currentPlayingType === PLAYING_LIST_TYPE.RANDOM) {
+            // 随机播放模式：随机选择一首不同的歌（与 playNext 相同逻辑）
+            let nextRandomIndex;
+            do {
+                nextRandomIndex = getCryptoRandomInt(0, playingList.length - 1);
+            } while (nextRandomIndex === currentIndex && playingList.length > 1);
+            
+            useMusicPlayer.playingIndex = nextRandomIndex;
+            useMusicPlayer.playingId = playingList[nextRandomIndex].id;
+        } else {
+            // 列表循环或单曲循环：播放上一首
+            const prevIndex = (currentIndex - 1 + playingList.length) % playingList.length;
+            useMusicPlayer.playingIndex = prevIndex;
+            useMusicPlayer.playingId = playingList[prevIndex].id;
+        }
+    }, [safeReleaseSoundRef]);
     
     const contextValue: MiniPlayerContextValue = {
         setMiniPlayer,
@@ -457,14 +560,18 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
         showMiniPlayer,
         getMiniPlayer,
         changeSoundPlaying,
+        playNext,
+        playPrev,
     };
 
+    // 使用主题创建样式
+    const styles = useMemo(() => createStyles(theme), [theme]);
 
     return (
         <MiniPlayerContext.Provider value={contextValue}>
             {children}
             {isVisible && (
-                <Pressable onPress={openMusicPlayer}>
+                <Pressable onPress={handleOpenMusicPlayer}>
                     <View style={[styles.container, { bottom: safeNeedTransition ? FOOTER_BAR_HEIGHT : 0 }]}>
                         <View style={styles.content}>
                             <MusicPlayerMiniFlatList></MusicPlayerMiniFlatList>
@@ -475,7 +582,7 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
                                             cx={SIZE / 2}
                                             cy={SIZE / 2}
                                             r={RADIUS}
-                                            stroke="rgba(255, 255, 255, 0.3)"
+                                            stroke={theme.typography.colors.small.default}
                                             strokeWidth={STROKE_WIDTH}
                                             fill="none"
                                         />
@@ -483,7 +590,7 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
                                             cx={SIZE / 2}
                                             cy={SIZE / 2}
                                             r={RADIUS}
-                                            stroke="#fff"
+                                            stroke={theme.colors.primary}
                                             strokeWidth={STROKE_WIDTH}
                                             fill="none"
                                             strokeDasharray={`${CIRCUMFERENCE}, ${CIRCUMFERENCE}`}
@@ -496,14 +603,14 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
                                     <View style={styles.playIcon}>
                                         {
                                             useMusicPlayer.playStatus === 'play' ?
-                                                <Pause color="#fff" size={16} fill="#fff" />
-                                                : <Play color="#fff" size={16} fill="#fff" />
+                                                <Pause color={theme.typography.colors.large.default} size={16} fill={theme.typography.colors.large.default} />
+                                                : <Play color={theme.typography.colors.large.default} size={16} fill={theme.typography.colors.large.default} />
                                         }
                                     </View>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity style={styles.listButton} onPress={openPlayingSongList}>
-                                    <List color="#fff" size={24} />
+                                    <List color={theme.typography.colors.large.default} size={24} />
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -518,6 +625,9 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
 });
 
 const SongItem = memo(({ cover, title, artist }: { cover: string, title: string, artist: string }) => {
+    const theme = useAppTheme(); // 获取主题
+    const styles = useMemo(() => createStyles(theme), [theme]);
+    
     return (
         <View style={styles.rowItem}>
             <FastImage
@@ -534,17 +644,21 @@ const SongItem = memo(({ cover, title, artist }: { cover: string, title: string,
 })
 
 const MusicPlayerMiniFlatList = memo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const theme = useAppTheme(); // 获取主题，用于SongItem组件
     const levelScrollViewRef = useRef<LevelScrollViewRef>(null)
     const horizontalScrollX = useSharedValue(0);
-    console.log('我刷新了MusicPlayerMiniFlatList');
     
     // 添加一个状态来控制显示/隐藏
     const [isVisible, setIsVisible] = useState(true);
 
     const musicPlayer = useSnapshot(useMusicPlayer)
 
+    // 不再创建未使用的样式
+    // const styles = useMemo(() => createStyles(theme), [theme]);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const playingSongNearly = useMemo(() => { 
-        console.log(' 我刷新了playingSongNearly');
         const index = useMusicPlayer.playingIndex
         const length = useMusicPlayer.playingList.length;
         const prevIndex = (index - 1 + length) % length;
@@ -554,7 +668,7 @@ const MusicPlayerMiniFlatList = memo(() => {
             useMusicPlayer.playingList[index],
             useMusicPlayer.playingList[nextIndex]
         ];
-    }, [musicPlayer.playingId, musicPlayer.playingIndex])
+    }, [musicPlayer.playingList, musicPlayer.playingIndex])
 
     const FinishHorizontalScrollHandle = (newIndex:number, oldIndex:number) => {
         if(newIndex === oldIndex) return;
@@ -620,9 +734,10 @@ export const useMiniPlayer = () => {
     return useContext(MiniPlayerContext);
 };
 
-const styles = StyleSheet.create({
+// 修改样式创建函数，接受主题参数
+const createStyles = (theme: any) => StyleSheet.create({
     container: {
-        backgroundColor: '#1a1a1a',
+        backgroundColor: theme.box.background.deep,
         position: 'absolute',
         left: 0,
         right: 0,
@@ -633,7 +748,6 @@ const styles = StyleSheet.create({
     },
     row: {
         width: '75%',
-        backgroundColor: 'red',
         padding: 8,
         paddingRight: 0,
     },
@@ -645,7 +759,7 @@ const styles = StyleSheet.create({
     cover: {
         width: 40,
         height: 40,
-        borderRadius: 4,
+        borderRadius: theme.borderRadius.rounded / 2,
     },
     info: {
         flex: 1,
@@ -653,13 +767,13 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     title: {
-        color: '#fff',
-        fontSize: 14,
+        color: theme.typography.colors.large.default,
+        fontSize: theme.typography.sizes.small,
         fontWeight: '500',
     },
     artist: {
-        color: 'rgba(255, 255, 255, 0.7)',
-        fontSize: 12,
+        color: theme.typography.colors.small.default,
+        fontSize: theme.typography.sizes.xsmall,
         marginTop: 2,
     },
     controls: {
@@ -677,7 +791,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         position: 'relative',
     },
-
     playIcon: {
         position: 'absolute',
         justifyContent: 'center',

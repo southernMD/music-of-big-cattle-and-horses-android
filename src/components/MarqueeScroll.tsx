@@ -52,14 +52,6 @@ function MarqueeScroll({
 
     // 创建滚动序列
     const scrollSequence = Animated.sequence([
-      // 先短暂停留（可选）
-      Animated.timing(translateX, {
-        toValue: 0,
-        duration: 800,
-        easing: Easing.linear,
-        useNativeDriver: true,
-        isInteraction: false,
-      }),
       // 然后滚动到末尾
       Animated.timing(translateX, {
         toValue: -(textWidth + TEXT_MARGIN),
@@ -160,8 +152,7 @@ function MarqueeScroll({
             width: !isCopy ? containerWidth : undefined 
           },
         ]}
-        shouldRasterizeIOS={true} // 启用iOS栅格化
-        renderToHardwareTextureAndroid={true} // 启用Android硬件加速
+        renderToHardwareTextureAndroid={true} 
       >
         <Text
           numberOfLines={1}

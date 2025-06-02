@@ -2,7 +2,7 @@
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { ChevronDown, Share2 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useSnapshot } from 'valtio';
+import { snapshot, useSnapshot } from 'valtio';
 import { useMusicPlayer } from '@/store';
 import { isLightColor } from '@/utils/isLightColor';
 import { useMemo } from 'react';
@@ -16,18 +16,17 @@ export function CustomHeaderTitle() {
     const fontColor = useMemo(() => {
         return isLightColor(musicPlayer.playingSongAlBkColor.average!) ? musicPlayer.playingSongAlBkColor.darkVibrant : musicPlayer.playingSongAlBkColor.lightMuted
     }, [musicPlayer.playingSongAlBkColor.average])
-
     const { getMiniPlayer } = useMiniPlayer()
     const obj = useMemo(() => {
         return getMiniPlayer()
-    }, [])
+    }, [getMiniPlayer])
     return (
         <View style={[styles.container, { backgroundColor: musicPlayer.playingSongAlBkColor.average }]}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
                 <ChevronDown color={fontColor} size={24} />
             </TouchableOpacity>
             <View style={styles.titleContainer}>
-                <MarqueeScroll text={obj.title} color={fontColor!} />
+                <MarqueeScroll text={musicPlayer.playingName} color={fontColor!} />
                 <Text style={[styles.artist, { color: fontColor }]} numberOfLines={1}>{obj.artist}</Text>
             </View>
             <TouchableOpacity>
