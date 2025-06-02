@@ -24,74 +24,47 @@ function MarqueeScroll({
   const [containerWidth, setContainerWidth] = useState(0);
   const canvasRef = useRef<Canvas | null>(null);
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+  const [key, setKey] = useState(0); // 用于强制重新渲染组件
 
   // 只有当文本宽度大于容器宽度时才滚动
   const isCopy = useMemo(() => {
     return textWidth > containerWidth && containerWidth > 0;
   }, [textWidth, containerWidth]);
 
-  // 使用原生Animated API创建动画
+  // 当文本内容变化时，重置组件
   useEffect(() => {
-    // 清除之前的动画
+    // 重置动画
+    translateX.setValue(0);
+    
+    // 停止之前的动画
     if (animationRef.current) {
       animationRef.current.stop();
       animationRef.current = null;
     }
-
-    // 如果文本不需要滚动，直接返回
-    if (!isCopy) {
-      translateX.setValue(0);
-      return;
+    
+    // 强制重新渲染组件
+    setKey(prevKey => prevKey + 1);
+    
+    // 如果Canvas已经初始化，重新计算宽度
+    if (canvasRef.current) {
+      calculateTextWidth(canvasRef.current);
     }
+  }, [text, translateX]);
 
-    // 计算滚动一次需要的时间（毫秒）
-    const duration = (textWidth / speed) * 1000;
-
-    // 重置位置
-    translateX.setValue(0);
-
-    // 创建滚动序列
-    const scrollSequence = Animated.sequence([
-      // 然后滚动到末尾
-      Animated.timing(translateX, {
-        toValue: -(textWidth + TEXT_MARGIN),
-        duration: duration,
-        easing: Easing.linear,
-        useNativeDriver: true,
-        isInteraction: false,
-      })
-    ]);
-    
-    // 创建无限循环动画
-    animationRef.current = Animated.loop(scrollSequence);
-    
-    // 延迟100ms启动动画，避免与其他动画冲突
-    setTimeout(() => {
-      if (animationRef.current) {
-        animationRef.current.start();
-      }
-    }, 100);
-
-    // 组件卸载时清理动画
-    return () => {
-      if (animationRef.current) {
-        animationRef.current.stop();
-      }
-    };
-  }, [textWidth, speed, isCopy, containerWidth, text]);
-
-  const handleCanvas = async (canvas: Canvas) => {
+  // 计算文本宽度的函数
+  const calculateTextWidth = async (canvas: Canvas) => {
     if (!canvas) return;
 
     try {
-      canvasRef.current = canvas;
-      
       // 设置Canvas尺寸
       canvas.width = screenWidth;
       canvas.height = 30;
       
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
+
+      // 清除之前的内容
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // 设置字体样式
       ctx.font = `${fontWeight} ${fontSize}px Arial`;
@@ -117,6 +90,67 @@ function MarqueeScroll({
     }
   };
 
+  // 使用原生Animated API创建动画
+  useEffect(() => {
+    // 清除之前的动画
+    if (animationRef.current) {
+      animationRef.current.stop();
+      animationRef.current = null;
+    }
+
+    // 如果文本不需要滚动，直接返回
+    if (!isCopy) {
+      translateX.setValue(0);
+      return;
+    }
+
+    // 计算滚动一次需要的时间（毫秒）
+    const duration = (textWidth / speed) * 1000;
+
+    // 重置位置
+    translateX.setValue(0);
+
+    // 创建滚动序列
+    const scrollSequence = Animated.sequence([
+      // 先停留一段时间
+      Animated.delay(500),
+      // 然后滚动到末尾
+      Animated.timing(translateX, {
+        toValue: -(textWidth + TEXT_MARGIN),
+        duration: duration,
+        easing: Easing.linear,
+        useNativeDriver: true,
+        isInteraction: false,
+      }),
+      // 末尾再停留一段时间
+      Animated.delay(500)
+    ]);
+    
+    // 创建无限循环动画
+    animationRef.current = Animated.loop(scrollSequence);
+    
+    // 延迟100ms启动动画，避免与其他动画冲突
+    setTimeout(() => {
+      if (animationRef.current) {
+        animationRef.current.start();
+      }
+    }, 100);
+
+    // 组件卸载或依赖变化时清理动画
+    return () => {
+      if (animationRef.current) {
+        animationRef.current.stop();
+        animationRef.current = null;
+      }
+    };
+  }, [textWidth, speed, isCopy, containerWidth, key]); // 添加key作为依赖，确保文本变化时重新创建动画
+
+  const handleCanvas = async (canvas: Canvas) => {
+    if (!canvas) return;
+    canvasRef.current = canvas;
+    calculateTextWidth(canvas);
+  };
+
   // 使用StyleSheet创建样式，提高性能
   const textStyles = useMemo(() => StyleSheet.create({
     primary: {
@@ -139,6 +173,7 @@ function MarqueeScroll({
     <View 
       style={styles.container}
       onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+      key={`marquee-container-${key}`}
     >
       {/* @ts-ignore */}
       <Canvas ref={handleCanvas} style={{ width: 1, height: 1, opacity: 0, position: 'absolute' }} />
@@ -160,7 +195,7 @@ function MarqueeScroll({
         >
           {text}
         </Text>
-        {isCopy ? <Text style={textStyles.copy}>{text}</Text> : null}
+        {isCopy ? <Text style={textStyles.copy} numberOfLines={1}>{text}</Text> : null}
       </Animated.View>
     </View>
   );
