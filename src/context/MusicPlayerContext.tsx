@@ -140,6 +140,16 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
     const controllerRef = useRef<AbortController | null>(null); // 添加 AbortController 的 ref
     const currentLoadingIdRef = useRef<number>(-1); // 跟踪当前正在加载的歌曲ID
     const playLockRef = useRef<boolean>(false); // 使用 ref 来管理锁定状态
+    const playingType = usePersistentStore<string>('playingType');
+    useEffect(() => {
+        if(playingType === PLAYING_LIST_TYPE.LOOP_ONE || useMusicPlayer.playingList.length === 1){
+            soundRef.current?.setNumberOfLoops(-1);
+            console.log('设置为无限循环');
+        }else{
+            soundRef.current?.setNumberOfLoops(0);
+            console.log('设置为自然播放');
+        }
+    }, [playingType,soundRef.current])
     
     // 创建一个安全的释放函数
     const safeReleaseSoundRef = useCallback(() => {
@@ -258,6 +268,20 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
                     
                     // 播放音频
                     useMusicPlayer.playStatus = 'play';
+                    
+                    // 检查是否需要循环播放
+                    getItem('playingType').then(currentPlayingType => {
+                        // 如果是单曲循环或只有一首歌，设置无限循环
+                        if (currentPlayingType === PLAYING_LIST_TYPE.LOOP_ONE || 
+                            (useMusicPlayer.playingList.length === 1)) {
+                            sound.setNumberOfLoops(-1); // -1 表示无限循环
+                        }else{
+                            sound.setNumberOfLoops(0);
+                        }
+                    });
+                    // 直接设置为无限循环，如果切换歌曲实例将会重新设置
+                    // sound.setNumberOfLoops(-1); 
+                    
                     sound.play((success) => {
                         // 如果这个实例已不是当前实例，不处理
                         if (soundRef.current !== sound) {
@@ -269,8 +293,8 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
                         if (success) {
                             console.log('Sound played successfully');
                             
-                            // 根据播放模式处理歌曲完成后的行为
-                            handleSongCompletion(interval);
+                            // 如果不是无限循环模式，则处理歌曲完成后的行为
+                            handleSongCompletion();
                         } else {
                             console.log('Sound playback failed');
                             
@@ -339,7 +363,15 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
                 useMusicPlayer.playStatus = 'stop';
             });
         } else {
-            soundRef.current!.play();
+            soundRef.current!.play((success) => {
+                useMusicPlayer.playStatus = 'stop';
+                if (success) {
+                    console.log('Sound played successfully');
+                    
+                    // 如果不是无限循环模式，则处理歌曲完成后的行为
+                    handleSongCompletion();
+                }
+            });
             useMusicPlayer.playStatus = 'play';
         }
     }, []);
@@ -365,91 +397,46 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
         }
     }, []);
 
-    // 修改 handleSongCompletion 函数，使用 async/await 更清晰
-    const handleSongCompletion = async (interval: NodeJS.Timeout | null) => {
-        // 清理定时器
-        if (interval) {
-            clearInterval(interval);
-        }
-        
-        if (useMusicPlayer.playingList.length === 0) return;
-        if (!soundRef.current) return;
+    // 修改 handleSongCompletion 函数，不再处理定时器和单曲循环
+    const handleSongCompletion = async () => {
+        // 如果没有播放列表或没有音频实例，直接返回
+        if (useMusicPlayer.playingList.length === 0 || !soundRef.current) return;
         
         // 获取当前播放模式
         const currentPlayingType = await getItem('playingType');
-        
-        // 判断是否是单曲循环或只有一首歌的情况
-        const isOneSongLoop = currentPlayingType === PLAYING_LIST_TYPE.LOOP_ONE || 
-            (currentPlayingType === PLAYING_LIST_TYPE.LOOP && useMusicPlayer.playingList.length === 1) ||
-            (currentPlayingType === PLAYING_LIST_TYPE.RANDOM && useMusicPlayer.playingList.length === 1);
-        
         const playingList = useMusicPlayer.playingList;
         const currentIndex = useMusicPlayer.playingIndex;
         
-        console.log("播放完成，当前模式:", currentPlayingType);
+        // 如果是单曲循环或只有一首歌，不需要处理（已经通过 setNumberOfLoops 设置了无限循环）
+        if (currentPlayingType === PLAYING_LIST_TYPE.LOOP_ONE || playingList.length === 1) {
+            return;
+        }
         
-        // 根据播放模式处理
-        if (isOneSongLoop) {
-            // 单曲循环：重置播放进度并重新播放
-            soundRef.current.setCurrentTime(0);
-            
-            // 创建新的定时器
-            const newInterval = setInterval(() => {
-                if (soundRef.current) {
-                    soundRef.current.getCurrentTime((time) => {
-                        const duration = soundRef.current!.getDuration();
-                        setProgress(time / duration * 100);
-                        setCurrentTime(time * 1000);
-                    });
-                } else {
-                    clearInterval(newInterval);
-                }
-            }, 200);
-            
-            // 播放并设置回调
-            soundRef.current.play(async (success) => {
-                if (soundRef.current) {
-                    useMusicPlayer.playStatus = 'stop';
-                    
-                    if (success) {
-                        console.log('循环播放完成');
-                        await handleSongCompletion(newInterval);
-                    } else {
-                        console.log('循环播放失败');
-                        clearInterval(newInterval);
-                    }
-                }
-            });
-            
-            useMusicPlayer.playStatus = 'play';
-        } else {
-            // 非单曲循环：释放资源
-            const sound = soundRef.current;
-            soundRef.current = null;
-            
-            sound.release();
-            setProgress(100);
-            
-            // 根据播放模式选择下一首
-            if (currentPlayingType === PLAYING_LIST_TYPE.LOOP) {
-                // 列表循环
-                const nextIndex = (currentIndex + 1) % playingList.length;
-                useMusicPlayer.playingIndex = nextIndex;
-                useMusicPlayer.playingId = playingList[nextIndex].id;
-            } else if (currentPlayingType === PLAYING_LIST_TYPE.RANDOM) {
-                // 随机播放
-                let nextRandomIndex;
-                if (playingList.length > 1) {
-                    do {
-                        nextRandomIndex = getCryptoRandomInt(0, playingList.length - 1);
-                    } while (nextRandomIndex === currentIndex);
-                } else {
-                    nextRandomIndex = 0;
-                }
-                
-                useMusicPlayer.playingIndex = nextRandomIndex;
-                useMusicPlayer.playingId = playingList[nextRandomIndex].id;
+        // 释放资源
+        const sound = soundRef.current;
+        soundRef.current = null;
+        sound.release();
+        setProgress(100);
+        
+        // 根据播放模式选择下一首
+        if (currentPlayingType === PLAYING_LIST_TYPE.LOOP) {
+            // 列表循环
+            const nextIndex = (currentIndex + 1) % playingList.length;
+            useMusicPlayer.playingIndex = nextIndex;
+            useMusicPlayer.playingId = playingList[nextIndex].id;
+        } else if (currentPlayingType === PLAYING_LIST_TYPE.RANDOM) {
+            // 随机播放
+            let nextRandomIndex;
+            if (playingList.length > 1) {
+                do {
+                    nextRandomIndex = getCryptoRandomInt(0, playingList.length - 1);
+                } while (nextRandomIndex === currentIndex);
+            } else {
+                nextRandomIndex = 0;
             }
+            
+            useMusicPlayer.playingIndex = nextRandomIndex;
+            useMusicPlayer.playingId = playingList[nextRandomIndex].id;
         }
     };
 
@@ -467,7 +454,7 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
         // 获取当前播放模式
         const currentPlayingType = await getItem('playingType');
         
-        // 如果只有一首歌，重新开始播放当前歌曲（类似单曲循环）
+        // 如果只有一首歌，重新开始播放当前歌曲
         if (playingList.length === 1) {
             if (soundRef.current) {
                 // 重置播放进度到开始
@@ -517,7 +504,7 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
         // 获取当前播放模式
         const currentPlayingType = await getItem('playingType');
         
-        // 如果只有一首歌，重新开始播放当前歌曲（类似单曲循环）
+        // 如果只有一首歌，重新开始播放当前歌曲
         if (playingList.length === 1) {
             if (soundRef.current) {
                 // 重置播放进度到开始
