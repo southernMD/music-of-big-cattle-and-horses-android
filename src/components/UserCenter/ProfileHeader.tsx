@@ -5,7 +5,6 @@ import { convertHttpToHttps } from '@/utils/fixHttp';
 import { ComponentType, memo, useEffect, useMemo, useState } from 'react';
 import { useSnapshot } from 'valtio';
 import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
-import { AnimatedOrRegular } from '@/utils/AnimatedOrRegular';
 import { userProfile } from '@/types/user/user';
 
 function ProfileHeader({ pullOffset, profile }: { pullOffset: SharedValue<number>,profile:userProfile | null }) {
@@ -30,12 +29,9 @@ function ProfileHeader({ pullOffset, profile }: { pullOffset: SharedValue<number
 
   return (
     <View style={styles.container}>
-      <AnimatedOrRegular
-        isAnimated={!isVisible}
-        component={Image}
+      <Animated.Image
         source={{ uri: backgroundUrl }}
-        style={styles.backgroundImage}
-        animatedStyle={animatedStyle}
+        style={[styles.backgroundImage,animatedStyle]}
         resizeMode="cover"
       />
 
@@ -44,32 +40,23 @@ function ProfileHeader({ pullOffset, profile }: { pullOffset: SharedValue<number
       </Pressable>
 
       <Pressable onPress={() => pressHandler(avatarUrl)}>
-        <AnimatedOrRegular
-          isAnimated={!isVisible}
-          component={Image}
+        <Animated.Image
           source={{ uri: avatarUrl }}
-          style={styles.avatar}
-          animatedStyle={tranStyle}
+          style={[styles.avatar,tranStyle]}
         />
       </Pressable>
 
-      <AnimatedOrRegular
-        isAnimated={!isVisible}
-        component={Text}
-        style={styles.name}
-        animatedStyle={tranStyle}
+      <Animated.Text
+        style={[styles.name,tranStyle]}
       >
         {profile?.nickname}
-      </AnimatedOrRegular>
+      </Animated.Text>
 
-      <AnimatedOrRegular
-        isAnimated={!isVisible}
-        component={Text}
-        style={styles.bio}
-        animatedStyle={tranStyle}
+      <Animated.Text
+        style={[styles.bio,tranStyle]}
       >
         {profile?.signature}
-      </AnimatedOrRegular>
+      </Animated.Text>
     </View>
   );
 }

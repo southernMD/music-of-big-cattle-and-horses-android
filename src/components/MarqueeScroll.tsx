@@ -8,8 +8,6 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import Canvas from 'react-native-canvas'
-import { useFullScreenImage } from '@/context/imgFullPreviewContext';
-import { AnimatedOrRegular } from '@/utils/AnimatedOrRegular';
 const { width: screenWidth } = Dimensions.get('window');
 
 interface Props {
@@ -87,17 +85,13 @@ function MarqueeScroll({
   };
 
 
-  const { isVisible } = useFullScreenImage()
   return (
     <View style={styles.container}
       onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
     >
       {/* @ts-ignore */}
       <Canvas ref={handleCanvas} style={{ width: screenWidth, height: 20, display: 'none' }}></Canvas>
-      <AnimatedOrRegular
-        isAnimated={!isVisible}
-        component={View}
-        animatedStyle={animatedStyle}
+      <Animated.View
         style={[styles.row, animatedStyle,
         { justifyContent: isCopy ? undefined : 'center', width: !isCopy ? containerWidth + TEXT_MARGIN : containerWidth },
         ]}>
@@ -108,7 +102,7 @@ function MarqueeScroll({
           {text}
         </Text>
         {isCopy ? <Text style={[{ color, fontSize, fontWeight, width: textWidth + TEXT_MARGIN }]}>{text}</Text> : <></>}
-      </AnimatedOrRegular>
+      </Animated.View>
     </View>
   );
 };

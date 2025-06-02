@@ -22,8 +22,6 @@ import { playListItem } from "@/types/api/playListItem";
 import { djItem } from "@/types/api/djItem";
 import { useThrottleCallback } from "@/hooks/useThrottleCallback";
 import LevelScrollView, { LevelScrollViewRef } from "@/components/StickBarScrollingFlatList/LevelScrollView";
-import { AnimatedOrRegular } from "@/utils/AnimatedOrRegular";
-import { useFullScreenImage } from "@/context/imgFullPreviewContext";
 import ProfileHeader from "@/components/UserCenter/ProfileHeader";
 import { convertHttpToHttps } from "@/utils/fixHttp";
 import PlaylistItem from "@/components/PlaylistItem";

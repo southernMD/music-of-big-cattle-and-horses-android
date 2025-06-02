@@ -44,11 +44,13 @@ export const LoadingMaodalProvider: React.FC<{ children: React.ReactNode }> = me
     return (
         <LoadingMaodalContext.Provider value={contextValue}>
             {children}
-            <Modal visible={isVisible} transparent animationType="fade">
-                <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="large" color={primaryColor} />
-                </View>
-            </Modal>
+            <View>
+                <Modal visible={isVisible} transparent animationType="fade">
+                    <View style={styles.loadingOverlay}>
+                        <ActivityIndicator size="large" color={primaryColor} />
+                    </View>
+                </Modal>
+            </View>
         </LoadingMaodalContext.Provider>
     )
 })

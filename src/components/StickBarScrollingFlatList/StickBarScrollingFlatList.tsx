@@ -6,11 +6,10 @@ import {
     LayoutChangeEvent,
     Dimensions,
 } from "react-native";
-import { useSharedValue, useAnimatedStyle, SharedValue } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, SharedValue } from "react-native-reanimated";
 import TabBar from "@/components/UserCenter/TabBar";
 import { useThrottleCallback } from "@/hooks/useThrottleCallback";
 import LevelScrollView, { LevelScrollViewRef } from "@/components/StickBarScrollingFlatList/LevelScrollView";
-import { AnimatedOrRegular } from "@/utils/AnimatedOrRegular";
 import { useFullScreenImage } from "@/context/imgFullPreviewContext";
 import { PanGesture } from "react-native-gesture-handler";
 import { HEADER_BAR_HEIGHT } from "@/constants/bar";
@@ -78,17 +77,15 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
 
     return (
         <View>
-            <AnimatedOrRegular
-                isAnimated={!isVisible}
-                component={View}
-                animatedStyle={tabBarAnimatedStyle}>
+            <Animated.View
+                style={tabBarAnimatedStyle}>
                 {tabs ? <TabBar
                     position="absolute"
                     onTabChange={throttledTabChange}
                     tabs={tabs}
                     scrollX={horizontalScrollX}
                 /> : StickElementTop()}
-            </AnimatedOrRegular>
+            </Animated.View>
 
             <LevelScrollView
                 Scrolling={ScrollingUserCenter}

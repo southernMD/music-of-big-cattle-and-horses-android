@@ -148,60 +148,62 @@ export const FullScreenImageProvider: React.FC<{ children: React.ReactNode }> = 
         return (
             <FullScreenImageContext.Provider value={contextValue}>
                 {children}
-                <Modal visible={isVisible} transparent={true} onRequestClose={closePreview}>
-                    <GestureHandlerRootView style={{ flex: 1 }}>
-                        <View style={styles.fullScreenContainer}>
-                            <TouchableOpacity
-                                style={styles.closeButton}
-                                onPress={closePreview}
-                                activeOpacity={0.7}
-                            >
-                                <X size={30} color="white" />
-                            </TouchableOpacity>
-
-                            <GestureDetector gesture={composedGesture}>
-                                <Animated.Image
-                                    source={{ uri: imageUrl }}
-                                    style={[
-                                        styles.fullScreenImage,
-                                        animatedStyle,
-                                        { opacity: isImageLoaded ? 1 : 0 },
-                                    ]}
-                                    onLoad={() => setIsImageLoaded(true)}
-                                    onLoadStart={() => setIsImageLoaded(false)}
-                                />
-                            </GestureDetector>
-
-                            {!isImageLoaded && (
-                                <ActivityIndicator
-                                    size="large"
-                                    color="#fff"
-                                    style={StyleSheet.absoluteFill}
-                                />
-                            )}
-
-                            <View style={styles.bottomBar}>
+                <View>
+                    <Modal visible={isVisible} transparent={true} onRequestClose={closePreview}>
+                        <GestureHandlerRootView style={{ flex: 1 }}>
+                            <View style={styles.fullScreenContainer}>
                                 <TouchableOpacity
-                                    style={buttonStyle.saveButton}
-                                    onPress={handleSaveImage}
+                                    style={styles.closeButton}
+                                    onPress={closePreview}
+                                    activeOpacity={0.7}
                                 >
-                                    <Text style={buttonStyle.saveButtonText}>保存图片</Text>
+                                    <X size={30} color="white" />
                                 </TouchableOpacity>
-                            </View>
 
-                            {toast && (
-                                <View style={[styles.toast, { backgroundColor: primaryColor }]}>
-                                    <Text style={styles.toastText}>{toast}</Text>
+                                <GestureDetector gesture={composedGesture}>
+                                    <Animated.Image
+                                        source={{ uri: imageUrl }}
+                                        style={[
+                                            styles.fullScreenImage,
+                                            animatedStyle,
+                                            { opacity: isImageLoaded ? 1 : 0 },
+                                        ]}
+                                        onLoad={() => setIsImageLoaded(true)}
+                                        onLoadStart={() => setIsImageLoaded(false)}
+                                    />
+                                </GestureDetector>
+
+                                {!isImageLoaded && (
+                                    <ActivityIndicator
+                                        size="large"
+                                        color="#fff"
+                                        style={StyleSheet.absoluteFill}
+                                    />
+                                )}
+
+                                <View style={styles.bottomBar}>
+                                    <TouchableOpacity
+                                        style={buttonStyle.saveButton}
+                                        onPress={handleSaveImage}
+                                    >
+                                        <Text style={buttonStyle.saveButtonText}>保存图片</Text>
+                                    </TouchableOpacity>
                                 </View>
-                            )}
-                        </View>
-                    </GestureHandlerRootView>
-                    {/* <View style={styles.fullScreenContainer}>
+
+                                {toast && (
+                                    <View style={[styles.toast, { backgroundColor: primaryColor }]}>
+                                        <Text style={styles.toastText}>{toast}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        </GestureHandlerRootView>
+                        {/* <View style={styles.fullScreenContainer}>
                         <Pressable onPress={() => console.log('press')}>
                             <Text>123456</Text>
                         </Pressable>
                     </View> */}
-                </Modal>
+                    </Modal>
+                </View>
             </FullScreenImageContext.Provider>
         );
     }

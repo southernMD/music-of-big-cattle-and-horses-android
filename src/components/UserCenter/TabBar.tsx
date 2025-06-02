@@ -10,7 +10,6 @@ import Animated, {
 import { useTheme } from '@/hooks/useTheme';
 import { usePersistentStore } from '@/hooks/usePersistentStore';
 import { useFullScreenImage } from '@/context/imgFullPreviewContext';
-import { AnimatedOrRegular } from '@/utils/AnimatedOrRegular';
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -135,21 +134,15 @@ function TabBar({onTabChange, tabs, position, onLayout, scrollX }: TabBarProps) 
                     style={styles.tab}
                     onPress={() => onTabChange(tab.key)}
                 >
-                    <AnimatedOrRegular
+                    <Animated.Text
                         ref={(ref: Text | null) => (textRefs.current[index] = ref)}
-                        isAnimated={!isVisible}
-                        component={Text}
-                        animatedStyle={animatedTextStyle(index)}
-                        style={styles.tabText}
+                        style={[styles.tabText,animatedTextStyle(index)]}
                         onLayout={onTextLayout(index)}
-                    >{tab.name}</AnimatedOrRegular>
+                    >{tab.name}</Animated.Text>
                 </TouchableOpacity>
             ))}
-            <AnimatedOrRegular
-                isAnimated={!isVisible}
-                component={View}
-                animatedStyle={animatedStyle}
-                style={styles.underline}
+            <Animated.View
+                style={[styles.underline,animatedStyle]}
             />
         </View>
     );
