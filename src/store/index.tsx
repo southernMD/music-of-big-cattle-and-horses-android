@@ -3,6 +3,7 @@ import { Login, getDetail, quitLogin } from '@/api'; // 假设这是你的 API �
 import { BaseApiType, UserCenterType, GlobalType, useMusicPlayerType } from '@/types/store';
 import { CodeEnum } from '@/constants/network';
 import { deleteCredentials } from '@/utils/keychain';
+import { DEFAULT_MUSIC_NAME } from '@/constants/values';
 // 定义 store
 export const useBasicApi = proxy<BaseApiType>({
     account: null, // 初始状态
@@ -57,10 +58,40 @@ export const useMusicPlayer = proxy<useMusicPlayerType>({
     playStatus:'stop',
     // addPlayingListIds:[], //将要添加到播放列表的音乐列表
     PlayingListId:-1,
-    playingSongAlBkColor:"#000",
+    playingSongAlBkColor:{
+        dominant:"#000",
+        average: "#000",
+        vibrant: "#000",
+        darkVibrant: "#000",
+        lightVibrant: "#000",
+        darkMuted: "#000",
+        lightMuted: "#000",
+        muted: "#000",
+        platform: 'android'
+    },
     //上一个播放的歌单id(限自己的歌单暂时)，在开始播放后会变成正在播放的歌单
     //0已下载 -1默认状态 -2本地  -3最近 -4私人FM -5个人排行 -6 top50
-    playingName:'',
+    playingName:DEFAULT_MUSIC_NAME,
     playingAl:{id:-1,name:''},
-    playingAr:[]
+    playingAr:[],
+    clearPlayingList(){
+        useMusicPlayer.playingList = []
+        useMusicPlayer.playingPrivileges = []
+        useMusicPlayer.playingId = -1
+        useMusicPlayer.playingIndex = -1
+        useMusicPlayer.playStatus = 'stop'
+        useMusicPlayer.PlayingListId = -1
+        useMusicPlayer.playingSongAlBkColor = {
+            dominant:"#000",
+            average: "#000",
+            vibrant: "#000",
+            darkVibrant: "#000",
+            lightVibrant: "#000",
+            darkMuted: "#000",
+            lightMuted: "#000",
+            muted: "#000",
+            platform: 'android'
+        },
+        useMusicPlayer.playingName = DEFAULT_MUSIC_NAME
+    }
 })

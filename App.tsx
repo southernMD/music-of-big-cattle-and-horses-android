@@ -19,7 +19,7 @@ import { setItem, getItem, clearItem, usePersistentStore } from '@/hooks/usePers
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { LoadingMaodalProvider, useLoadingModal } from '@/context/LoadingModalContext';
 import { MiniPlayerProvider, useMiniPlayer } from '@/context/MusicPlayerContext';
-import { NavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainerRef, Route } from '@react-navigation/native';
 import { RootStackParamList } from '@/types/NavigationType';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -51,16 +51,24 @@ function App(): React.JSX.Element {
     };
   }, [isDark, primaryColor]);
   const navigationRef= useRef<NavigationContainerRef<RootStackParamList>>(null);
-  const [currentRoute, setCurrentRoute] = useState(undefined);
+  const [currentRoute, setCurrentRoute] = useState<Route<string, any>>();
 
   const openMusicPlayer = () => {
     navigationRef.current?.navigate('MusicPlayer');
+  };
+  const goBack = () => {
+    console.log("???goBack?");
+    navigationRef.current?.goBack();
   };
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemeProvider>
-          <MiniPlayerProvider currentRoute={currentRoute} openMusicPlayer={openMusicPlayer}>
+          <MiniPlayerProvider 
+              currentRoute={currentRoute!} 
+              openMusicPlayer={openMusicPlayer}
+              goBack={goBack}
+            >
             <LoadingMaodalProvider>
               <FullScreenImageProvider>
                 <Provider>

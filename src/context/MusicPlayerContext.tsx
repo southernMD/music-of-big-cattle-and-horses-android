@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, memo, useEffect, useMemo, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Pressable, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Pressable, Dimensions, BackHandler } from 'react-native';
 import { List, Pause, Play } from 'lucide-react-native';
 import { ParamListRoute } from '@react-navigation/native';
 import { FOOTER_BAR_HEIGHT, NEED_FOOTER_BAR_ROUTE } from '@/constants/bar';
@@ -20,7 +20,7 @@ import PlayingSongList from '@/components/PlayingSongList';
 import { createRef } from 'react';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { getCryptoRandomInt } from '@/utils/getCryptoRandomInt';
-import { PLAYING_LIST_TYPE } from '@/constants/values';
+import { DEFAULT_MUSIC_NAME, PLAYING_LIST_TYPE } from '@/constants/values';
 import { useAppTheme } from '@/context/ThemeContext';
 import { getCurrentPlayMode } from '@/utils/playModeUtils';
 
@@ -40,6 +40,15 @@ interface MiniPlayerContextValue {
     changeSoundPlaying: () => void;
     playNext: () => void;
     playPrev: () => void;
+    removeFromPlayingList:(id:number,index:number) => void
+    removeAllFromPlayingList:() => void
+}
+
+interface MusicPlayerProps { 
+    children: React.ReactNode;
+    currentRoute: ParamListRoute<any>;
+    openMusicPlayer: () => void;
+    goBack:()=> void;
 }
 
 const MiniPlayerContext = createContext<MiniPlayerContextValue>({
@@ -51,6 +60,8 @@ const MiniPlayerContext = createContext<MiniPlayerContextValue>({
     changeSoundPlaying: () => { },
     playNext: () => { },
     playPrev: () => { },
+    removeFromPlayingList:() => {},
+    removeAllFromPlayingList:() => {}
 });
 
 const SIZE = 25;
@@ -63,11 +74,11 @@ const rowWidth = screenWidth * 0.75; // styles.row 的宽度
 // 创建一个全局引用，这样可以从任何地方控制底部弹出层
 export const playingSongListRef = createRef<BottomSheet>();
 
-export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRoute?: ParamListRoute<any>, openMusicPlayer: () => void }> = memo(({ children, currentRoute, openMusicPlayer }) => {
+export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, currentRoute, openMusicPlayer,goBack }) => {
     const theme = useAppTheme(); // 获取主题
     const isDark = usePersistentStore<boolean>('isDark');
     const [isVisible, setIsVisible] = useState(false);
-    const [title, setTitle] = useState('好音乐，用牛马');
+    const [title, setTitle] = useState(DEFAULT_MUSIC_NAME);
     const [artist, setArtist] = useState('');
     const [progress, setProgress] = useState(0);
     const [cover, setCover] = useState(isDark ? 'icon' : 'icon_red')
@@ -539,7 +550,26 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
             useMusicPlayer.playingId = playingList[prevIndex].id;
         }
     }, [safeReleaseSoundRef]);
+
+    //从播放列表中移除歌曲
+    const removeFromPlayingList = useCallback(async (id: number,index:number) => { 
+        useMusicPlayer.playingList.splice(index, 1);
+        if(useMusicPlayer.playingId === id){
+            useMusicPlayer.playingIndex = index;
+            useMusicPlayer.playingId = useMusicPlayer.playingList[index].id;
+        }
+    }, [musicPlayer.playingList,musicPlayer.playingId,musicPlayer.playingIndex]);
     
+    //移除全部的歌曲
+    const removeAllFromPlayingList = useCallback(() => {
+        useMusicPlayer.clearPlayingList()
+        setMiniPlayer(DEFAULT_MUSIC_NAME,'',0,isDark ? 'icon' : 'icon_red')
+        hideMiniPlayer()
+        safeReleaseSoundRef()
+        console.log(currentRoute,"????????");
+        if(currentRoute.name === 'MusicPlayer') goBack()
+    }, [currentRoute]);
+
     const contextValue: MiniPlayerContextValue = {
         setMiniPlayer,
         hideMiniPlayer,
@@ -549,6 +579,8 @@ export const MiniPlayerProvider: React.FC<{ children: React.ReactNode, currentRo
         changeSoundPlaying,
         playNext,
         playPrev,
+        removeFromPlayingList,
+        removeAllFromPlayingList
     };
 
     // 使用主题创建样式
@@ -641,12 +673,9 @@ const MusicPlayerMiniFlatList = memo(() => {
 
     const musicPlayer = useSnapshot(useMusicPlayer)
 
-    // 不再创建未使用的样式
-    // const styles = useMemo(() => createStyles(theme), [theme]);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     const playingSongNearly = useMemo(() => { 
         const index = useMusicPlayer.playingIndex
+        if(index === -1) return []
         const length = useMusicPlayer.playingList.length;
         const prevIndex = (index - 1 + length) % length;
         const nextIndex = (index + 1) % length;

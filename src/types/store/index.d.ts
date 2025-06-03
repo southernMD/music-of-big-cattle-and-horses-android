@@ -28,6 +28,7 @@ export type useMusicPlayerType = {
     playingName:string
     playingAl:{id:number,name:string}
     playingAr:Array<{id:number,name:string}>
+    clearPlayingList:() => void
     //上一个播放的歌单id(限自己的歌单暂时)，在开始播放后会变成正在播放的歌单
     //0已下载 -1默认状态 -2本地  -3最近 -4私人FM -5个人排行 -6 top50
     // addPlayingList:Array<number>

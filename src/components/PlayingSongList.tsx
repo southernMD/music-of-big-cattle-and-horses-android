@@ -7,10 +7,13 @@ import { useMusicPlayer } from '@/store';
 import { Trash2, X } from 'lucide-react-native';
 import { useAppTheme } from '@/context/ThemeContext';
 import { PlayModeToggle } from './MusicPlayer/PlayModeToggle';
+import { Song } from '@/types/Song';
+import { useMiniPlayer } from '@/context/MusicPlayerContext';
 
 // 修改为 forwardRef 接受外部 ref
 const PlayingSongList = forwardRef<BottomSheet>((props, ref) => {
   const theme = useAppTheme();
+  const { removeFromPlayingList,removeAllFromPlayingList } = useMiniPlayer();
   // 安全区域插入值
   const insets = useSafeAreaInsets();
   
@@ -42,25 +45,33 @@ const PlayingSongList = forwardRef<BottomSheet>((props, ref) => {
       bottomSheet.close();
     }
   }, [ref]);
-
-  // 删除单首歌曲
-  const handleDeleteSong = useCallback((index: number) => {
-    // 这里添加删除歌曲的逻辑
-    console.log('删除歌曲', index);
-  }, []);
-
+  
   // 清空播放列表
   const handleClearPlaylist = useCallback(() => {
     // 这里添加清空播放列表的逻辑
+    removeAllFromPlayingList();
     console.log('清空播放列表');
-  }, []);
+    handleSheetClose()
+  }, [removeAllFromPlayingList]);
+
+  // 删除单首歌曲
+  const handleDeleteSong = useCallback((item:Song,index: number) => {
+    if(musicPlayer.playingList.length === 1){
+      handleClearPlaylist()
+    }else{
+      removeFromPlayingList(item.id,index)
+    }
+    console.log('删除歌曲', index);
+  }, [musicPlayer.playingList,handleClearPlaylist]);
+
+
 
 
   // 使用主题创建样式
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   // 渲染歌曲列表项
-  const renderItem = useCallback(({item, index}: {item: any, index: number}) => {
+  const renderItem = useCallback(({item, index}: {item: Song, index: number}) => {
     const isPlaying = index === musicPlayer.playingIndex;
     const name = item.name;
     const artist = item.ar.map((item: any) => item.name).join('/');
@@ -85,13 +96,13 @@ const PlayingSongList = forwardRef<BottomSheet>((props, ref) => {
             ellipsizeMode="tail"
           >
             {name}
-            <Text style={styles.separator}> · </Text>
-            <Text style={styles.artistName}>{artist}</Text>
+            <Text style={[styles.separator, isPlaying && styles.playingText]}> · </Text>
+            <Text style={[styles.artistName, isPlaying && styles.playingText]}>{artist}</Text>
           </Text>
         </View>
         <TouchableOpacity 
           style={styles.deleteButton}
-          onPress={() => handleDeleteSong(index)}
+          onPress={() => handleDeleteSong(item,index)}
         >
           <X color={theme.typography.colors.small.default} size={16} />
         </TouchableOpacity>
