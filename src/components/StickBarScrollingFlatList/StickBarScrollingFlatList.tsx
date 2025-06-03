@@ -5,6 +5,7 @@ import {
     NativeSyntheticEvent,
     LayoutChangeEvent,
     Dimensions,
+    FlatList,
 } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, SharedValue } from "react-native-reanimated";
 import TabBar from "@/components/UserCenter/TabBar";
@@ -20,7 +21,7 @@ interface Props {
     children: {
         HeaderBar:React.ReactElement | null,
         HeaderContent:React.ReactElement,
-        FlatListContent:React.ReactElement
+        FlatListContent:React.ReactElement<FlatList>
     };
     tabs?: { key: string; name: string }[];
     Scrolling?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;

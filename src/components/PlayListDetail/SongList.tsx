@@ -173,7 +173,7 @@ export function SongList({ songs, onSongPress,playlistDetailMsg,type }: SongList
                     <FlatList
                         style={{ width: screenWidth }}
                         data={songs}
-                        keyExtractor={(item) => item.id.toString()}
+                        keyExtractor={(item,index) => `${item.id}-${index}`}
                         removeClippedSubviews={false}
                         renderItem={({ item,index }) => {
                             return (

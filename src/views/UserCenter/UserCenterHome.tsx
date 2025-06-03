@@ -113,37 +113,42 @@ const UserCenterHome: React.FC = () => {
                 HeaderContent: <ProfileHeader pullOffset={pullOffset} profile={finialProfile} />,
                 FlatListContent: <>
                     {
-                        (contentLists.map((list, idx) => (
-                            <View key={idx} style={{ width: screenWidth }}>
-                                <FlatList
-                                    data={list}
-                                    keyExtractor={(item) => item.id.toString()}
-                                    removeClippedSubviews={false}
-                                    renderItem={({ item }: { item: playListItem | djItem }) => {
-                                        const imageUrl = (item as playListItem).coverImgUrl ?? (item as djItem).picUrl;
-                                        const songNumber = (item as playListItem).trackCount ?? (item as djItem).programCount;
-                                        const playOrStartNumber = (item as djItem).subCount ?? (item as playListItem).playCount;
-                                        const createId = (item as djItem).dj ? (item as djItem).dj.userId : (item as playListItem).creator.userId;
-                                        return (
-                                            <View style={styles.list}>
-                                                <PlaylistItem
-                                                    createId={createId}
-                                                    id={item.id}
-                                                    type={(item as djItem).dj ? 'dj' : 'Album'}
-                                                    image={convertHttpToHttps(imageUrl)}
-                                                    title={item.name}
-                                                    count={songNumber}
-                                                    plays={playOrStartNumber}
-                                                    onPress={() => console.log("Playlist pressed:", item.name)}
-                                                />
-                                            </View>
-                                        );
-                                    }}
-                                />
-                            </View>
-                        )))
+                        <FlatList
+                            horizontal={true}
+                            data={contentLists}
+                            removeClippedSubviews={false}
+                            keyExtractor={(item, index) => index.toString()}
+                            renderItem={({ item:list, index:idx }) => (
+                                <View key={idx} style={{ width: screenWidth }} >
+                                    <FlatList
+                                        data={list}
+                                        keyExtractor={(item) => item.id.toString()}
+                                        removeClippedSubviews={false}
+                                        renderItem={({ item,index }: { item: playListItem | djItem,index:number }) => {
+                                            const imageUrl = (item as playListItem).coverImgUrl ?? (item as djItem).picUrl;
+                                            const songNumber = (item as playListItem).trackCount ?? (item as djItem).programCount;
+                                            const playOrStartNumber = (item as djItem).subCount ?? (item as playListItem).playCount;
+                                            const createId = (item as djItem).dj ? (item as djItem).dj.userId : (item as playListItem).creator.userId;
+                                            return (
+                                                <View style={styles.list}>
+                                                    <PlaylistItem
+                                                        createId={createId}
+                                                        id={item.id}
+                                                        type={(item as djItem).dj ? 'dj' : 'Album'}
+                                                        image={convertHttpToHttps(imageUrl)}
+                                                        title={item.name}
+                                                        count={songNumber}
+                                                        plays={playOrStartNumber}
+                                                        onPress={() => console.log("Playlist pressed:", item.name)}
+                                                    />
+                                                </View>
+                                            );
+                                        }}
+                                    />
+                                </View>
+                            )}
+                        />
                     }
-
                 </>
             }}
         >

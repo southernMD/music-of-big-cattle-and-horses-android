@@ -9,6 +9,7 @@ import { Playlist } from '@/types/PlayList';
 import { Song } from '@/types/Song';
 import { useMusicPlayer } from '@/store';
 import { debounce } from '@/utils/Debounce';
+import { FOOTER_BAR_HEIGHT } from '@/constants/bar';
 
 export default function PlayListDetail() {
     const route = useRoute<RouteProp<PlayListDetailStackParamList>>();
@@ -54,20 +55,22 @@ export default function PlayListDetail() {
 
     return (
         <>
-            {playlistDetailMsg ?
-                <SongList
-                    type={type}
-                    playlistDetailMsg={playlistDetailMsg}
-                    songs={playListSongs}
-                    onSongPress={playSong} />
-                : ''}
+            <View style={styles.container}>
+                {playlistDetailMsg ?
+                    <SongList
+                        type={type}
+                        playlistDetailMsg={playlistDetailMsg}
+                        songs={playListSongs}
+                        onSongPress={playSong} />
+                    : ''}
+            </View>
         </>
+
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
-        backgroundColor: '#1a1a1a',
+        marginBottom: FOOTER_BAR_HEIGHT,
     },
 });

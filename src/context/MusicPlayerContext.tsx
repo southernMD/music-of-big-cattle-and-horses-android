@@ -553,11 +553,18 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
 
     //从播放列表中移除歌曲
     const removeFromPlayingList = useCallback(async (id: number,index:number) => { 
+        console.log(id,index);
         useMusicPlayer.playingList.splice(index, 1);
-        if(useMusicPlayer.playingId === id){
-            useMusicPlayer.playingIndex = index;
-            useMusicPlayer.playingId = useMusicPlayer.playingList[index].id;
+        if(index < useMusicPlayer.playingIndex){
+            useMusicPlayer.playingIndex--;
+        }else{
+            useMusicPlayer.playingId = useMusicPlayer.playingList[useMusicPlayer.playingIndex].id;
         }
+        // console.log(useMusicPlayer.playingId,id);
+        // if(useMusicPlayer.playingId === id){
+        //     useMusicPlayer.playingIndex = index;
+        //     useMusicPlayer.playingId = useMusicPlayer.playingList[index].id;
+        // }
     }, [musicPlayer.playingList,musicPlayer.playingId,musicPlayer.playingIndex]);
     
     //移除全部的歌曲

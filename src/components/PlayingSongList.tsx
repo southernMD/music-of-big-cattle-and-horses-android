@@ -174,7 +174,7 @@ const PlayingSongList = forwardRef<BottomSheet>((props, ref) => {
         <View style={{ flex: 1, minHeight }}>
           {/* 歌曲列表 - 使用 BottomSheetFlatList 替代 FlatList */}
           <BottomSheetFlatList
-            data={musicPlayer.playingList}
+            data={useMusicPlayer.playingList}
             keyExtractor={(item) => `${item.id}`}
             renderItem={renderItem}
             contentContainerStyle={[

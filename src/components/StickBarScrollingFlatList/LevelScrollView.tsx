@@ -1,4 +1,4 @@
-import React, { memo, useRef, useMemo, useCallback, forwardRef, useImperativeHandle, useEffect } from "react";
+import React, { memo, useRef, useMemo, useCallback, forwardRef, useImperativeHandle, useEffect, useState } from "react";
 import {
   View,
   FlatList,
@@ -35,7 +35,7 @@ interface Props {
   loading: boolean
   Scrolling: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   horizontalScrollX: SharedValue<number>
-  children: [React.ReactElement,React.ReactElement];
+  children: [React.ReactElement,React.ReactElement<FlatList>];
   panGesture?:PanGesture
   itemWidth?:number
   startIndex?:number
@@ -54,7 +54,6 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
   FinishHorizontalScrollHandle
 }, ref) => {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
-  console.log("LevelScrollView刷新了");
   
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
@@ -163,6 +162,15 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
     };
   }, []);
 
+  const [currentIndex,setCurrentIndex] = useState(0);
+  useDerivedValue(() => {
+    runOnJS(setCurrentIndex)(Math.floor(horizontalScrollX.value / itemWidth))
+  }, [horizontalScrollX]);
+
+  useEffect(() => {
+    console.log(currentIndex,"现在的下标值为");
+  }, [currentIndex]);
+
   return (
     <GestureDetector gesture={finialGesture}>
       <FlatList
@@ -181,6 +189,7 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             scrollEventThrottle={16}
+
           >
             {
               loading ?
