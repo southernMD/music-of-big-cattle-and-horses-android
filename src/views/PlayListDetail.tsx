@@ -71,6 +71,5 @@ export default function PlayListDetail() {
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: FOOTER_BAR_HEIGHT,
     },
 });

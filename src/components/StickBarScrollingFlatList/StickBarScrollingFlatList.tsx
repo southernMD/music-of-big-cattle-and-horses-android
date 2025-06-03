@@ -13,7 +13,7 @@ import { useThrottleCallback } from "@/hooks/useThrottleCallback";
 import LevelScrollView, { LevelScrollViewRef } from "@/components/StickBarScrollingFlatList/LevelScrollView";
 import { useFullScreenImage } from "@/context/imgFullPreviewContext";
 import { PanGesture } from "react-native-gesture-handler";
-import { HEADER_BAR_HEIGHT } from "@/constants/bar";
+import { FOOTER_BAR_HEIGHT, HEADER_BAR_HEIGHT } from "@/constants/bar";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -28,8 +28,9 @@ interface Props {
     loading: boolean
     panGesture?:PanGesture
     itemWidth?: number
+    heightList?:number[]
 }
-const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling, loading,panGesture,itemWidth = screenWidth }) => {
+const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling, loading,panGesture,itemWidth = screenWidth,heightList }) => {
     const horizontalScrollX = useSharedValue(0);
     const translateY = useSharedValue(0);
 
@@ -96,6 +97,8 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
                 horizontalScrollX={horizontalScrollX}
                 panGesture={panGesture}
                 itemWidth={itemWidth}
+                heightList={heightList}
+                contentContainerStyle={{paddingBottom:FOOTER_BAR_HEIGHT}}
             >
                 <>
                     {children.HeaderContent}
@@ -111,6 +114,7 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
                     {children.FlatListContent}
                 </>
             </LevelScrollView>
+            <View style={{ height: FOOTER_BAR_HEIGHT }} />
         </View>
     );
 };

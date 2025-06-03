@@ -1,4 +1,4 @@
-import React, { memo, useRef, useMemo, useCallback, forwardRef, useImperativeHandle, useEffect, useState } from "react";
+import React, { memo, useRef, useMemo, useCallback, forwardRef, useImperativeHandle, useEffect, useState, CSSProperties } from "react";
 import {
   View,
   FlatList,
@@ -7,6 +7,8 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   LayoutChangeEvent,
+  StyleProp,
+  ViewStyle,
 } from "react-native";
 import { Gesture, GestureDetector, PanGesture } from "react-native-gesture-handler";
 import Animated, {
@@ -23,6 +25,7 @@ import Animated, {
   runOnUI,
 } from "react-native-reanimated";
 import LoadingPlaceholder from "@/components/LoadingPlaceholder";
+import { FOOTER_BAR_HEIGHT } from "@/constants/bar";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -31,6 +34,7 @@ export interface LevelScrollViewRef {
 }
 // useAnimatedRef<Animated.ScrollView>
 interface Props {
+  contentContainerStyle?: StyleProp<ViewStyle>
   blockLen:number;
   loading: boolean
   Scrolling: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -40,6 +44,7 @@ interface Props {
   itemWidth?:number
   startIndex?:number
   FinishHorizontalScrollHandle?:(newindex:number,oldIndex:number)=>void
+  heightList?:number[]
 }
 
 const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
@@ -51,7 +56,9 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
   panGesture,
   itemWidth = screenWidth,
   startIndex = 0,
-  FinishHorizontalScrollHandle
+  FinishHorizontalScrollHandle,
+  heightList,
+  contentContainerStyle
 }, ref) => {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   
@@ -172,13 +179,14 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
   }, [currentIndex]);
 
   return (
-    <GestureDetector gesture={finialGesture}>
+    <GestureDetector gesture={finialGesture} >
       <FlatList
         data={[0]}
         keyExtractor={() => "main"}
         onScroll={Scrolling}
         scrollEventThrottle={16}
         removeClippedSubviews={false}
+        contentContainerStyle={contentContainerStyle} 
         ListHeaderComponent={
           children[0]
         }
@@ -189,7 +197,7 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             scrollEventThrottle={16}
-
+            style={{height:heightList?.[currentIndex] ?? 'auto'}}
           >
             {
               loading ?

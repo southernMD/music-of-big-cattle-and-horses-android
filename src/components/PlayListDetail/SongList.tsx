@@ -15,6 +15,7 @@ import { RootStackNavigationProps } from '@/types/NavigationType';
 import { useMiniPlayer } from '@/context/MusicPlayerContext';
 import { playAllMusic } from '@/utils/player/playAllMusic';
 import { debounce } from '@/utils/Debounce';
+import { FOOTER_BAR_HEIGHT } from '@/constants/bar';
 
 
 interface SongListProps {
@@ -175,6 +176,7 @@ export function SongList({ songs, onSongPress,playlistDetailMsg,type }: SongList
                         data={songs}
                         keyExtractor={(item,index) => `${item.id}-${index}`}
                         removeClippedSubviews={false}
+                        contentContainerStyle={{ paddingBottom: FOOTER_BAR_HEIGHT }} 
                         renderItem={({ item,index }) => {
                             return (
                                 <TouchableOpacity

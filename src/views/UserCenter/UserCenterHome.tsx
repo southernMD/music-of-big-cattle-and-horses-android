@@ -102,12 +102,34 @@ const UserCenterHome: React.FC = () => {
         pullOffset.value = withSpring(0, { stiffness: 150, damping: 20 });
     });
 
+    const [itemHeight, setItemHeight] = useState<number>(0);
+    const playlistItemRef = useRef<View>(null);
+    
+    const onPlaylistItemLayout = useCallback((event: LayoutChangeEvent) => {
+        const { height } = event.nativeEvent.layout;
+        setItemHeight(height);
+        console.log('PlaylistItem 高度:', height);
+    }, []);
+
+    const heightList = useMemo(()=>{
+        return [
+            userPlayList.length * itemHeight,
+            userCreateDj.length * itemHeight,
+            userStartPlayList.length * itemHeight,
+        ]
+    },[userPlayList, userCreateDj, userStartPlayList, itemHeight])
+    
+    useEffect(() => {
+        console.log(heightList,"itemHeight");
+    }, [heightList]);
+
     return (
         <StickBarScrollingFlatList
             Scrolling={Scrolling}
             tabs={tabs}
             loading={loading}
             panGesture={panGesture}
+            heightList={heightList}
             children={{
                 HeaderBar: null,
                 HeaderContent: <ProfileHeader pullOffset={pullOffset} profile={finialProfile} />,
@@ -130,7 +152,11 @@ const UserCenterHome: React.FC = () => {
                                             const playOrStartNumber = (item as djItem).subCount ?? (item as playListItem).playCount;
                                             const createId = (item as djItem).dj ? (item as djItem).dj.userId : (item as playListItem).creator.userId;
                                             return (
-                                                <View style={styles.list}>
+                                                <View 
+                                                    style={styles.list} 
+                                                    ref={index === 0 ? playlistItemRef : null}
+                                                    onLayout={index === 0 ? onPlaylistItemLayout : undefined}
+                                                >
                                                     <PlaylistItem
                                                         createId={createId}
                                                         id={item.id}
