@@ -16,13 +16,14 @@ import { useMiniPlayer } from '@/context/MusicPlayerContext';
 import { playAllMusic } from '@/utils/player/playAllMusic';
 import { debounce } from '@/utils/Debounce';
 import { FOOTER_BAR_HEIGHT } from '@/constants/bar';
-
+import { djItemSong } from '@/types/api/djItem';
+import { RadioDetailInfo } from '@/types/api/RadioDetail';
 
 interface SongListProps {
-    songs: Song[];
-    onSongPress?: (song: Song,type : 'dj' | 'Album') => void;
-    playlistDetailMsg:Playlist
-    type:'dj' | 'Album'
+    songs: Song[] | djItemSong[];
+    onSongPress?: (song: Song | djItemSong,type : 'dj' | 'playList') => void;
+    playlistDetailMsg:Playlist | RadioDetailInfo
+    type:'dj' | 'playList'
 }
 const screenWidth = Dimensions.get("window").width;
 
@@ -132,13 +133,16 @@ export function SongList({ songs, onSongPress,playlistDetailMsg,type }: SongList
 
     const playAll = async () => {
         if(songs.length === 0) return
-        await playAllMusic({ willPlayListId:playlistDetailMsg.id }).catch((e)=>{
-            console.log(e);
-            Toast.show({
-                content: "获取歌曲失败",
-                position: 'bottom'
-            });
-        })
+        if(type === 'playList'){
+            await playAllMusic({ willPlayListId:playlistDetailMsg.id }).catch((e)=>{
+                console.log(e);
+                Toast.show({
+                    content: "获取歌曲失败",
+                    position: 'bottom'
+                });
+            })
+        }
+
     };
     return (
         <StickBarScrollingFlatList
@@ -177,7 +181,7 @@ export function SongList({ songs, onSongPress,playlistDetailMsg,type }: SongList
                         keyExtractor={(item,index) => `${item.id}-${index}`}
                         removeClippedSubviews={false}
                         contentContainerStyle={{ paddingBottom: FOOTER_BAR_HEIGHT }} 
-                        renderItem={({ item,index }) => {
+                        renderItem={({ item,index }:{item:Song | djItemSong,index:number}) => {
                             return (
                                 <TouchableOpacity
                                     key={item.id}
@@ -185,7 +189,7 @@ export function SongList({ songs, onSongPress,playlistDetailMsg,type }: SongList
                                     onPress={() => onSongPress?.(item,type)}
                                 >
                                     <Text style={styles.songIndex}>{(index + 1).toString().padStart(2, '0')}</Text>
-                                    <FastImage source={{ uri: convertHttpToHttps(item.al.picUrl) }} style={styles.songCover} />
+                                    <FastImage source={{ uri: convertHttpToHttps('al' in item ?item.al.picUrl:item.coverUrl) }} style={styles.songCover} />
                                     <View style={styles.songInfo}>
                                         <Text 
                                             style={styles.songTitle}
@@ -198,13 +202,17 @@ export function SongList({ songs, onSongPress,playlistDetailMsg,type }: SongList
                                                     <Text style={styles.qualityText}>{item.quality}</Text>
                                                 </View>
                                             )} */}
-                                            <Text 
-                                                style={styles.artistText}
-                                                numberOfLines={1}
-                                                ellipsizeMode='tail'
-                                            >
-                                                {item.ar.flatMap(item=>item.name).join("/")+ ' - ' + item.al.name}
-                                            </Text>
+                                            {
+                                                'ar' in item && (
+                                                    <Text 
+                                                        style={styles.artistText}
+                                                        numberOfLines={1}
+                                                        ellipsizeMode='tail'
+                                                    >
+                                                        {item.ar.flatMap(item=>item.name).join("/")+ ' - ' + item.al.name}
+                                                    </Text>
+                                                )
+                                            }
                                         </View>
                                     </View>
                                     <TouchableOpacity style={styles.moreButton}>

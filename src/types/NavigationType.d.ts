@@ -46,7 +46,7 @@ export type PlayListDetailStackParamList = {
         id: number;
         createId:number;
         name:string;
-        type:'dj' | 'Album';
+        type:'dj' | 'playList';
     };
 }
 

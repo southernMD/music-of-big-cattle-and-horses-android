@@ -3,6 +3,7 @@ import { customFetch as fetch } from "./init";
 import { LoginUserType, QuitLoginType, UserDetailType, UserDjType, UserPlaylistType } from "@/types/api/user";
 import { PlaylistTrackType, PlayListType } from "@/types/api/PlayListType";
 import { SongDetailsType, SongUrlType } from "@/types/api/song";
+import { djDetailType, djProgramDetailType } from "@/types/api/djItem";
 
 export const apiTest = async () => {
    return fetch('/user/playlist?uid=361080509')
@@ -104,5 +105,23 @@ export const SongUrl = (id:number,controller?: AbortController,level:string = 's
 export const SongDetail = (ids:number[])=>{
     return fetch<SongDetailsType>(`/song/detail?ids=${ids.join(',')}`,{
         method:'POST',
+    })
+}
+
+//电台详情
+export const djDetail = (rid:number)=>{
+    return fetch<djDetailType>(`/dj/detail?rid=${rid}`,{
+        method:'POST',
+    })
+}
+
+//电台节目的详情
+export const djProgramDetail = (rid:number,limit:number = 9999,offset?:number)=>{
+    return fetch<djProgramDetailType>(`/dj/program?rid=${rid}`,{
+        method:'POST',
+        body:JSON.stringify({
+            limit,
+            offset,
+        })
     })
 }

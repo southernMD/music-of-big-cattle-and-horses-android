@@ -160,7 +160,7 @@ const UserCenterHome: React.FC = () => {
                                                     <PlaylistItem
                                                         createId={createId}
                                                         id={item.id}
-                                                        type={(item as djItem).dj ? 'dj' : 'Album'}
+                                                        type={(item as djItem).dj ? 'dj' : 'playList'}
                                                         image={convertHttpToHttps(imageUrl)}
                                                         title={item.name}
                                                         count={songNumber}

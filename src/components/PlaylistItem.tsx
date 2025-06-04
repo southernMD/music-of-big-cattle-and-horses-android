@@ -7,7 +7,7 @@ import FastImage from 'react-native-fast-image'
 import { useNavigation } from '@react-navigation/native';
 import { RootStackNavigationProps } from '@/types/NavigationType';
 interface PlaylistItemProps {
-  type: 'Album' | 'dj'
+  type: 'playList' | 'dj'
   id: number;
   createId: number;
   image: string;
@@ -70,7 +70,7 @@ function PlaylistItem({ createId,id,image, type, title, count, plays, onPress }:
       />
       <View style={styles.content}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{count}首 · {plays}{type === 'Album' ? '次播放' : '次收藏'}</Text>
+        <Text style={styles.subtitle}>{count}首 · {plays}{type === 'playList' ? '次播放' : '次收藏'}</Text>
       </View>
       <TouchableOpacity style={styles.moreButton}>
         <Icon name="more" size={20} color={typography.colors.medium.default} />

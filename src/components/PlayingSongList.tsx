@@ -9,6 +9,7 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { PlayModeToggle } from './MusicPlayer/PlayModeToggle';
 import { Song } from '@/types/Song';
 import { useMiniPlayer } from '@/context/MusicPlayerContext';
+import { djItemSong } from '@/types/api/djItem';
 
 // 修改为 forwardRef 接受外部 ref
 const PlayingSongList = forwardRef<BottomSheet>((props, ref) => {
@@ -55,7 +56,7 @@ const PlayingSongList = forwardRef<BottomSheet>((props, ref) => {
   }, [removeAllFromPlayingList]);
 
   // 删除单首歌曲
-  const handleDeleteSong = useCallback((item:Song,index: number) => {
+  const handleDeleteSong = useCallback((item:Song | djItemSong,index: number) => {
     if(musicPlayer.playingList.length === 1){
       handleClearPlaylist()
     }else{
@@ -71,10 +72,10 @@ const PlayingSongList = forwardRef<BottomSheet>((props, ref) => {
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   // 渲染歌曲列表项
-  const renderItem = useCallback(({item, index}: {item: Song, index: number}) => {
+  const renderItem = useCallback(({item, index}: {item: Song | djItemSong, index: number}) => {
     const isPlaying = index === musicPlayer.playingIndex;
     const name = item.name;
-    const artist = item.ar.map((item: any) => item.name).join('/');
+    const artist = "ar" in item? item.ar.map((item: any) => item.name).join('/') : item.dj.nickname;
     
     return (
       <TouchableOpacity 

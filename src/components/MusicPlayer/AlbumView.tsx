@@ -16,7 +16,8 @@ export function AlbumView() {
     const musicPlayer = useSnapshot(useMusicPlayer)
 
     const playingSongCover = useMemo(() => {
-        return convertHttpToHttps(musicPlayer.playingList[musicPlayer.playingIndex]?.al.picUrl) ?? 'icon'
+        const song = musicPlayer.playingList[musicPlayer.playingIndex]
+        return convertHttpToHttps('al' in song ? song?.al.picUrl : song.coverUrl) ?? 'icon'
     }, [musicPlayer.playingList, musicPlayer.playingIndex])
 
     const fontColor = useMemo(() => {

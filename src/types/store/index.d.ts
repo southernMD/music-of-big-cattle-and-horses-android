@@ -1,6 +1,7 @@
 import { userProfile,userAccount } from "@/types/user/user"
 import { Song,SongPrivilege } from '@/types/Song'
 import { AndroidImageColors } from 'react-native-image-colors/lib/typescript/types';
+import { djItemSong } from "@/types/api/djItem";
 
 export type BaseApiType = {
     account:userAccount | null
@@ -18,7 +19,7 @@ export type GlobalType = {
 }
 
 export type useMusicPlayerType = {
-    playingList:Array<Song>
+    playingList:Array<Song | djItemSong>
     playingPrivileges:Array<SongPrivilege>
     playingId:number
     playingIndex:number

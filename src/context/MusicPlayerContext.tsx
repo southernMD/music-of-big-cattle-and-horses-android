@@ -252,14 +252,24 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                 const playingSong = useMusicPlayer.playingList[useMusicPlayer.playingIndex];
                 console.log(useMusicPlayer.playingIndex,useMusicPlayer.playingList,">>><MNOBI HJNM");
                 
-                const name = `${playingSong.name} ${playingSong.tns?.length ? `(${playingSong.tns[0]})` : ''} ${playingSong.alia?.length ? `(${playingSong.alia[0]})` : ''}`;
-                const artist = playingSong.ar.map(item => item.name).join('/');
+                const name = 'dj' in playingSong ? playingSong.name : `${playingSong.name} ${playingSong.tns?.length ? `(${playingSong.tns[0]})` : ''} ${playingSong.alia?.length ? `(${playingSong.alia[0]})` : ''}`;
+                const artist = 'ar' in playingSong ? 
+                            playingSong.ar.map(item => item.name).join('/') : 
+                            playingSong.dj.nickname
                 
                 // 更新播放信息
                 useMusicPlayer.playingName = name;
-                useMusicPlayer.playingAl = {id:playingSong.al.id,name:playingSong.al.name};
-                useMusicPlayer.playingAr = playingSong.ar.map(item => ({id:item.id,name:item.name}));
-                setMiniPlayer(name, artist + '-' + playingSong.al.name, 0, convertHttpToHttps(playingSong.al.picUrl));
+                useMusicPlayer.playingAl = 'al' in playingSong ? 
+                                        {id:playingSong.al.id,name:playingSong.al.name}: 
+                                        {id:playingSong.radio.id,name:playingSong.radio.name}
+                useMusicPlayer.playingAr = 'ar' in playingSong ? 
+                                        playingSong.ar.map(item => ({id:item.id,name:item.name})):
+                                        [{id:playingSong.dj.userId,name:playingSong.dj.nickname}]
+                setMiniPlayer(name, 
+                    artist + '-' + ('al' in playingSong ? playingSong.al.name : playingSong.radio.name),
+                    0,
+                    convertHttpToHttps('al' in playingSong ? playingSong.al.picUrl : playingSong.coverUrl)
+                );
                 
                 try {
                     let TrackQueue = [];
@@ -271,8 +281,8 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                         url: httpSong,
                         title: name,
                         artist: artist,
-                        album: playingSong.al.name,
-                        artwork: convertHttpToHttps(playingSong.al.picUrl),
+                        album: 'al' in playingSong ? playingSong.al.name : playingSong.radio.name,
+                        artwork: convertHttpToHttps('al' in playingSong ? playingSong.al.picUrl : playingSong.coverUrl),
                         duration: 0, 
                     })
                     //计算下一首曲目
@@ -282,16 +292,16 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                     if(currentPlayingType === PLAYING_LIST_TYPE.LOOP_ONE || useMusicPlayer.playingList.length === 1 || currentPlayingType === PLAYING_LIST_TYPE.LOOP){
                         const nextIndex = (useMusicPlayer.playingIndex + 1) % useMusicPlayer.playingList.length;
                         const nextSong = useMusicPlayer.playingList[nextIndex];
-                        const nextName = `${nextSong.name} ${nextSong.tns?.length ? `(${nextSong.tns[0]})` : ''} ${nextSong.alia?.length ? `(${nextSong.alia[0]})` : ''}`;
-                        const nextArtist = nextSong.ar.map(item => item.name).join('/');
+                        const nextName = 'dj' in nextSong ? `${nextSong.name}`: `${nextSong.name} ${nextSong.tns?.length ? `(${nextSong.tns[0]})` : ''} ${nextSong.alia?.length ? `(${nextSong.alia[0]})` : ''}`;
+                        const nextArtist = 'ar' in nextSong ? nextSong.ar.map(item => item.name).join('/') : nextSong.dj.nickname;
                         
                         TrackQueue.push({
                             id: useMusicPlayer.playingList[nextIndex].id,
                             url: httpSong,
                             title: nextName,
                             artist: nextArtist,
-                            album: nextSong.al.name,
-                            artwork: convertHttpToHttps(playingSong.al.picUrl),
+                            album: 'al' in nextSong ? nextSong.al.name : nextSong.radio.name,
+                            artwork: convertHttpToHttps('al' in nextSong ? nextSong.al.picUrl : nextSong.coverUrl),
                             duration: 0, 
                         })
                     }else if(currentPlayingType === PLAYING_LIST_TYPE.RANDOM){
@@ -300,15 +310,15 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                             randomIndex = getCryptoRandomInt(0, useMusicPlayer.playingList.length - 1);
                         } while (randomIndex === useMusicPlayer.playingIndex);
                         const randomSong = useMusicPlayer.playingList[randomIndex];
-                        const randomName = `${randomSong.name} ${randomSong.tns?.length ? `(${randomSong.tns[0]})` : ''} ${randomSong.alia?.length ? `(${randomSong.alia[0]})` : ''}`;
-                        const randomArtist = randomSong.ar.map(item => item.name).join('/');
+                        const randomName = 'dj' in randomSong ? `${randomSong.name}`: `${randomSong.name} ${randomSong.tns?.length ? `(${randomSong.tns[0]})` : ''} ${randomSong.alia?.length ? `(${randomSong.alia[0]})` : ''}`
+                        const randomArtist = 'ar' in randomSong ? randomSong.ar.map(item => item.name).join('/') : randomSong.dj.nickname;
                         TrackQueue.push({
                             id: randomSong.id,
                             url: httpSong,
                             title: randomName,
                             artist: randomArtist,
-                            album: randomSong.al.name,
-                            artwork: convertHttpToHttps(randomSong.al.picUrl),
+                            album: 'al' in randomSong ? randomSong.al.name : randomSong.radio.name,
+                            artwork: convertHttpToHttps('al' in randomSong ? randomSong.al.picUrl : randomSong.coverUrl),
                             duration: 0, 
                         });
 
@@ -374,8 +384,8 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                     url: nextTrack.url,
                     title: nextSong.name,
                     artist: artist,
-                    album: nextSong.al.name,
-                    artwork: convertHttpToHttps(nextSong.al.picUrl),
+                    album: 'al' in nextSong ? nextSong.al.name : nextSong.radio.name,
+                    artwork: convertHttpToHttps('al' in nextSong ? nextSong.al.picUrl : nextSong.coverUrl),
                     duration: 0, 
                 })
             }else{
@@ -391,8 +401,8 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                     url: nextTrack.url,
                     title: nextSong.name,
                     artist: artist,
-                    album: nextSong.al.name,
-                    artwork: convertHttpToHttps(nextSong.al.picUrl),
+                    album: 'al' in nextSong ? nextSong.al.name : nextSong.radio.name,
+                    artwork: convertHttpToHttps('al' in nextSong ? nextSong.al.picUrl : nextSong.coverUrl),
                     duration: 0, 
                 })
             }
@@ -726,9 +736,9 @@ const MusicPlayerMiniFlatList = memo(() => {
                 showsHorizontalScrollIndicator={false}
                 style={{ opacity: isVisible ? 1 : 0 }} // 控制可见性
                 renderItem={({item}) => {
-                    const name = `${item.name} ${item.tns?.length ? `(${item.tns[0]})` : ''} ${item.alia?.length ? `(${item.alia[0]})` : ''}`
-                    const artist = item.ar.map(item => item.name).join('/') + '-' + item.al.name
-                    const cover = convertHttpToHttps(item.al.picUrl)
+                    const name = 'dj' in item ? `${item.name}`: `${item.name} ${item.tns?.length ? `(${item.tns[0]})` : ''} ${item.alia?.length ? `(${item.alia[0]})` : ''}`
+                    const artist = 'ar' in item ? item.ar.map(item => item.name).join('/') + '-' + item.al.name : item.dj.nickname + '-' + item.radio.name
+                    const cover = convertHttpToHttps('al' in item ? item.al.picUrl : item.coverUrl)
                     return <SongItem cover={cover} title={name} artist={artist} />
                 }}
             />

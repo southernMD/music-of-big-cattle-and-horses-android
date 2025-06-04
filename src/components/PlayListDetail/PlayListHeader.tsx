@@ -10,9 +10,10 @@ import { useSnapshot } from 'valtio';
 import { useBasicApi } from '@/store';
 import { Playlist } from '@/types/PlayList';
 import { HEADER_BAR_HEIGHT } from '@/constants/bar';
+import { RadioDetailInfo } from '@/types/api/RadioDetail';
 
 interface PlaylistHeaderProps {
-    playlistDetailMsg: Playlist
+    playlistDetailMsg: Playlist | RadioDetailInfo
 }
 const { width } = Dimensions.get('screen');
 export function PlaylistHeader({ playlistDetailMsg }: PlaylistHeaderProps) {
@@ -23,12 +24,33 @@ export function PlaylistHeader({ playlistDetailMsg }: PlaylistHeaderProps) {
         showFullScreenImage(url)
     };
     const startFlag = useMemo(()=>{
-        return Boolean(playlistDetailMsg.subscribed)
-    },[playlistDetailMsg.subscribed])
-    const image = useMemo(()=>convertHttpToHttps(playlistDetailMsg.coverImgUrl),[playlistDetailMsg.coverImgUrl])
+        return 'subscribed' in playlistDetailMsg ? Boolean(playlistDetailMsg.subscribed) : playlistDetailMsg.subed
+    },[playlistDetailMsg])
+    const image = useMemo(()=>convertHttpToHttps('coverImgUrl' in playlistDetailMsg ? playlistDetailMsg.coverImgUrl : playlistDetailMsg.picUrl),[playlistDetailMsg])
     const isMyCreate = useMemo(()=>{
-        return profile?.userId == playlistDetailMsg.creator.userId
-    },[profile,playlistDetailMsg.creator.userId])
+        return profile?.userId == ('creator' in playlistDetailMsg ? playlistDetailMsg.creator.userId : playlistDetailMsg.dj.userId)
+    },[profile,playlistDetailMsg])
+    
+    // 获取创建者信息
+    const creator = useMemo(() => {
+        return 'creator' in playlistDetailMsg ? playlistDetailMsg.creator : playlistDetailMsg.dj;
+    }, [playlistDetailMsg]);
+    
+    // 获取描述信息
+    const description = useMemo(() => {
+        return 'description' in playlistDetailMsg ? playlistDetailMsg.description : playlistDetailMsg.desc;
+    }, [playlistDetailMsg]);
+    
+    // 获取标签
+    const tags = useMemo(() => {
+        if ('tags' in playlistDetailMsg && playlistDetailMsg.tags && playlistDetailMsg.tags.length > 0) {
+            return playlistDetailMsg.tags;
+        } else if ('category' in playlistDetailMsg && playlistDetailMsg.category) {
+            return [playlistDetailMsg.category];
+        }
+        return [];
+    }, [playlistDetailMsg]);
+    
     const styles = StyleSheet.create({
         container: {
             padding: 20,
@@ -130,7 +152,6 @@ export function PlaylistHeader({ playlistDetailMsg }: PlaylistHeaderProps) {
     const toggleExpand = () => {
         setIsExpanded(!isExpanded); // 切换状态
     };
-    console.log(playlistDetailMsg.subscribed);
     return (
         <View style={styles.container}>
             <View style={styles.details}>
@@ -140,22 +161,23 @@ export function PlaylistHeader({ playlistDetailMsg }: PlaylistHeaderProps) {
 
                 <View style={styles.info}>
                     <Text style={styles.title} numberOfLines={2}>{playlistDetailMsg.name}</Text>
-                    {playlistDetailMsg.tags?.length == 0 ?null:
+                    
+                    {/* 标签渲染 */}
+                    {tags.length > 0 && (
                         <View style={styles.tags}>
-                            {playlistDetailMsg.tags?.map((tag, index) => {
-                                return (
-                                    <Text style={styles.tag}>{tag}</Text>
-                                )
-                            })}
+                            {tags.map((tag, index) => (
+                                <Text key={index} style={styles.tag}>{tag}</Text>
+                            ))}
                         </View>
-                    }
+                    )}
+                    
                     <View style={styles.authorRow}>
                         <FastImage
-                            source={{ uri: convertHttpToHttps(playlistDetailMsg.creator.avatarUrl) }}
+                            source={{ uri: convertHttpToHttps(creator.avatarUrl) }}
                             style={styles.avatar}
                         />
 
-                        <Text style={styles.author}>{playlistDetailMsg.creator.nickname}</Text>
+                        <Text style={styles.author}>{creator.nickname}</Text>
                         <Text style={styles.playCount}>{playlistDetailMsg.playCount}次播放</Text>
                     </View>
 
@@ -165,7 +187,7 @@ export function PlaylistHeader({ playlistDetailMsg }: PlaylistHeaderProps) {
                             numberOfLines={isExpanded ? undefined : 1} 
                             ellipsizeMode={isExpanded ? undefined : "tail"}
                         >
-                            {playlistDetailMsg.description}
+                            {description}
                         </Text>
                         {!isExpanded && <Text style={styles.chevron}>›</Text>}
                     </TouchableOpacity>

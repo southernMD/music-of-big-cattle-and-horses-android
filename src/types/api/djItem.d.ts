@@ -1,4 +1,6 @@
 import { userProfile } from "@/types/user/user"
+import { SongAlSimple, SongArSimple } from "../Song"
+import { RadioDjInfo } from "./RadioDetail"
 
 export type djItem = {
     dj: userProfile,
@@ -43,3 +45,246 @@ export type djItem = {
     id: number,
     rcmdtext: null
 }
+
+export type djItemSong = {
+    mainSong: {
+        name: string;
+        id: number;
+        position: number;
+        alias: string[];
+        status: number;
+        fee: number;
+        copyrightId: number;
+        disc: string;
+        no: number;
+        artists: SongArSimple[];
+        album: SongAlSimple;
+        starred: boolean;
+        popularity: number;
+        score: number;
+        starredNum: number;
+        duration: number;
+        playedNum: number;
+        dayPlays: number;
+        hearTime: number;
+        ringtone: null;
+        crbt: null;
+        audition: null;
+        copyFrom: string;
+        commentThreadId: string;
+        rtUrl: null;
+        ftype: number;
+        rtUrls: any[];
+        copyright: number;
+        transName: null;
+        sign: null;
+        mark: number;
+        noCopyrightRcmd: null;
+        hMusic: null;
+        mMusic: null;
+        lMusic: {
+            name: null;
+            id: number;
+            size: number;
+            extension: string;
+            sr: number;
+            dfsId: number;
+            bitrate: number;
+            playTime: number;
+            volumeDelta: number;
+        };
+        rtype: number;
+        rurl: null;
+        mvid: number;
+        bMusic: {
+            name: null;
+            id: number;
+            size: number;
+            extension: string;
+            sr: number;
+            dfsId: number;
+            bitrate: number;
+            playTime: number;
+            volumeDelta: number;
+        };
+        mp3Url: null;
+    };
+    songs: null;
+    dj: {
+        defaultAvatar: boolean;
+        province: number;
+        authStatus: number;
+        followed: boolean;
+        avatarUrl: string;
+        accountStatus: number;
+        gender: number;
+        city: number;
+        birthday: number;
+        userId: number;
+        userType: number;
+        nickname: string;
+        signature: string;
+        description: string;
+        detailDescription: string;
+        avatarImgId: number;
+        backgroundImgId: number;
+        backgroundUrl: string;
+        authority: number;
+        mutual: boolean;
+        expertTags: null;
+        experts: null;
+        djStatus: number;
+        vipType: number;
+        remarkName: null;
+        authenticationTypes: number;
+        avatarDetail: null;
+        avatarImgIdStr: string;
+        backgroundImgIdStr: string;
+        anchor: boolean;
+        avatarImgId_str: string;
+        brand: string;
+    };
+    participateAnchors: null;
+    programGuests: null;
+    blurCoverUrl: string;
+    radio: {
+        dj: null;
+        category: string;
+        secondCategory: string;
+        buyed: boolean;
+        price: number;
+        originalPrice: number;
+        discountPrice: null;
+        purchaseCount: number;
+        lastProgramName: null;
+        videos: null;
+        finished: boolean;
+        underShelf: boolean;
+        liveInfo: null;
+        playCount: number;
+        privacy: boolean;
+        icon: null;
+        manualTagsDTO: null;
+        descPicList: {
+            type: number;
+            id: number;
+            content: string;
+            height: null;
+            width: null;
+            timeStamp: string;
+            nestedData: null;
+        }[];
+        replaceRadioId: number;
+        replaceRadio: null;
+        shortName: null;
+        participateUidList: any[];
+        operateUidList: any[];
+        picId: number;
+        categoryId: number;
+        taskId: number;
+        programCount: number;
+        subCount: number;
+        picUrl: string;
+        lastProgramId: number;
+        feeScope: number;
+        lastProgramCreateTime: number;
+        radioFeeType: number;
+        intervenePicUrl: string;
+        intervenePicId: number;
+        dynamic: boolean;
+        desc: string;
+        createTime: number;
+        name: string;
+        id: number;
+        subed: boolean;
+    };
+    duration: number;
+    authDTO: null;
+    buyed: boolean;
+    programDesc: {
+        type: number;
+        id: number;
+        content: string;
+        height: null;
+        width: null;
+        timeStamp: null;
+        nestedData: {
+            textList: {
+                text: string;
+                attributes: null;
+            }[];
+            attributes: null;
+        };
+    }[];
+    h5Links: null;
+    canReward: boolean;
+    auditStatus: number;
+    videoInfo: null;
+    score: number;
+    liveInfo: null;
+    alg: null;
+    ctrp: null;
+    themeType: null;
+    disPlayStatus: null;
+    auditDisPlayStatus: number;
+    categoryName: null;
+    secondCategoryName: null;
+    existLyric: boolean;
+    djPlayRecordVo: null;
+    recommended: boolean;
+    icon: null;
+    additionIconList: null;
+    adIconInfo: null;
+    replaceVoiceId: number;
+    replaceResource: null;
+    songTimeStamps: null;
+    classicRelationSong: null;
+    classicStyleInfo: null;
+    specialTags: null;
+    seqNo: null;
+    commonModule: null;
+    programFeeType: number;
+    channels: any[];
+    categoryId: number;
+    commentThreadId: string;
+    createEventId: number;
+    listenerCount: number;
+    scheduledPublishTime: number;
+    serialNum: number;
+    coverId: number;
+    secondCategoryId: number;
+    coverUrl: string;
+    smallLanguageAuditStatus: number;
+    bdAuditStatus: number;
+    pubStatus: number;
+    mainTrackId: number;
+    titbits: null;
+    feeScope: number;
+    reward: boolean;
+    subscribedCount: number;
+    privacy: boolean;
+    titbitImages: null;
+    trackCount: number;
+    isPublish: boolean;
+    description: string;
+    createTime: number;
+    name: string;
+    id: number;
+    shareCount: number;
+    subscribed: boolean;
+    likedCount: number;
+    commentCount: number;
+}
+
+export type djProgramDetailType = {
+    count: number,
+    code: CodeEnum,
+    programs: Array<djItemSong>,
+    more: boolean,
+}
+
+export type djDetailType = {
+    code: CodeEnum,
+    data: RadioDetailInfo,
+}
+
