@@ -22,6 +22,22 @@
       "sha1": "ef5c7c50c1da88740da77cca52def746079f9f35"
     },
     {
+      "path": "src/assets/imgs/ic_next.png",
+      "sha1": "d6d8b35e9a31e6c5eeb0dfd2a198b1ee3bd75004"
+    },
+    {
+      "path": "src/assets/imgs/ic_pause.png",
+      "sha1": "b809df9e72c85395e1725a1f7fff45807ef66398"
+    },
+    {
+      "path": "src/assets/imgs/ic_play.png",
+      "sha1": "4ff5dcfd0482eacf5b73f591401af9d35bd7c32f"
+    },
+    {
+      "path": "src/assets/imgs/ic_prev.png",
+      "sha1": "b4ab614db1914bac93533d53da2f56c832f99a4f"
+    },
+    {
       "path": "src/assets/imgs/img.jpg",
       "sha1": "1a5e50bfd7fe3dd0ec92b4257ff8adf10bfef3fb"
     },

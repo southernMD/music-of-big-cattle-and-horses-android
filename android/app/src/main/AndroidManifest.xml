@@ -7,6 +7,11 @@
     <uses-permission android:name="android.permission.SYSTEM_OVERLAY_WINDOW" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"
@@ -40,6 +45,10 @@
       <service android:name="com.awesomeproject.MyHeadlessJsTaskService" />
       <service android:name="com.awesomeproject.QrCodeHeadlessJsTaskService" />
       <service android:name="com.awesomeproject.qrcodeWorker.QrCodeService" />
+      <service
+        android:name="com.reactnativemusiccontrol.MusicControlNotificationService"
+        android:enabled="true"
+        android:exported="false" />
     </application>
     <queries>
         <intent>

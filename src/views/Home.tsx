@@ -4,7 +4,7 @@ import { createStaticNavigation, NavigationProp, ParamListBase, useNavigation } 
 import { Button, Icon } from '@ant-design/react-native';
 import { NativeEventEmitter, NativeModules, AppRegistry } from 'react-native';
 import { NativeModulesPlayMusicManager, backgroundPlayMusic } from '@/backgroundTasks/NativeMusicPlayer';
-import Sound from 'react-native-sound';
+// import Sound from 'react-native-sound';
 import type { RootStackNavigationProps } from '@/types/NavigationType'
 import { getItem, setItem, usePersistentStore } from '@/hooks/usePersistentStore';
 import { useSnapshot } from 'valtio';
