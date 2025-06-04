@@ -18,21 +18,24 @@ export default function PlayListDetail() {
     const [playlistDetailMsg, setPlayListDetailMsg] = useState<Playlist>();
     
     useEffect(() => {
-        playlistDetail(id).then((res) => {
-            setPlayListSongs(res.playlist.tracks)
-            setPlayListDetailMsg(res.playlist)
-        })
+        if(type == 'Album'){
+            playlistDetail(id).then((res) => {
+                setPlayListSongs(res.playlist.tracks)
+                setPlayListDetailMsg(res.playlist)
+            })
+        }
+
     },[])
 
     // 原始的 playSong 函数
-    const handlePlaySong = (song: Song, type: 'dj' | 'Album') => {
+    const handlePlaySong = async (song: Song, type: 'dj' | 'Album') => {
         console.log('Pressed song:', song.name)
         //以下实现的是将歌曲添加到播放列表并播放
         if(true){
             const indexInPlayingList = useMusicPlayer.playingList.findIndex((item)=>item.id === song.id)
             
             if(indexInPlayingList === -1){
-                SongDetail([song.id]).then(({privileges,songs})=>{
+               await SongDetail([song.id]).then(({privileges,songs})=>{
                     const newIndex = useMusicPlayer.playingIndex + 1;
                     useMusicPlayer.playingIndex = newIndex;
                     useMusicPlayer.playingList.splice(newIndex,0,...songs)

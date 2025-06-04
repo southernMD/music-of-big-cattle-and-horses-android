@@ -2,12 +2,15 @@ import TrackPlayer, { AppKilledPlaybackBehavior, Capability, Event, State } from
 import { useMusicPlayer } from '@/store';
 
 // 导入图标资源
-import playIcon from '../assets/imgs/ic_play.png';
-import pauseIcon from '../assets/imgs/ic_pause.png';
-import previousIcon from '../assets/imgs/ic_prev.png';
-import nextIcon from '../assets/imgs/ic_next.png';
-import notificationIcon from '../assets/imgs/icon.png';
+import playIcon from '@/assets/imgs/ic_play.png';
+import pauseIcon from '@/assets/imgs/ic_pause.png';
+import previousIcon from '@/assets/imgs/ic_prev.png';
+import nextIcon from '@/assets/imgs/ic_next.png';
+import notificationIcon from '@/assets/imgs/icon.png';
 
+import { TinyEmitter } from 'tiny-emitter';
+
+export const PlayerEmitter = new TinyEmitter();
 // 定义播放服务
 export async function setupPlayer() {
   try {
@@ -26,8 +29,12 @@ export async function setupPlayer() {
         Capability.SkipToNext,
         Capability.SkipToPrevious,
       ],
-      compactCapabilities: [Capability.Play, Capability.Pause],
-
+      compactCapabilities: [
+        Capability.Play,
+        Capability.Pause,
+        Capability.SkipToNext,
+        Capability.SkipToPrevious,
+      ],
       // 使用导入的图标
       playIcon: playIcon,
       pauseIcon: pauseIcon,
@@ -55,19 +62,16 @@ TrackPlayer.addEventListener(Event.RemotePause, () => {
   TrackPlayer.pause();
 });
 
-//   TrackPlayer.addEventListener(Event.RemoteStop, () => {
-//     console.log('用户点击了停止');
-//     TrackPlayer.stop();
-//   });
-
 TrackPlayer.addEventListener(Event.RemoteNext, async () => {
   console.log('用户点击了下一曲');
-  await TrackPlayer.skipToNext();
+  PlayerEmitter.emit('next');
+  // await TrackPlayer.skipToNext();
 });
 
 TrackPlayer.addEventListener(Event.RemotePrevious, async () => {
   console.log('用户点击了上一曲');
-  await TrackPlayer.skipToPrevious();
+  PlayerEmitter.emit('prev');
+  // await TrackPlayer.skipToPrevious();
 });
 
 TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, async (event) => {
@@ -85,5 +89,8 @@ TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, async (event) => 
 TrackPlayer.addEventListener(Event.PlaybackState, (event) => {
   console.log('播放状态已更改:', event);
   // 更新播放状态
-  useMusicPlayer.playStatus = event.state === State.Playing ? 'play' : 'stop';
+  useMusicPlayer.playStatus = event.state === State.Playing || event.state === State.Ready ? 'play' : 'stop';
+  if(event.state === State.Ready){
+    TrackPlayer.play();
+  }
 });

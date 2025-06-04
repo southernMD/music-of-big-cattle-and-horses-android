@@ -22,7 +22,7 @@ import { getCryptoRandomInt } from '@/utils/getCryptoRandomInt';
 import { DEFAULT_MUSIC_NAME, PLAYING_LIST_TYPE } from '@/constants/values';
 import { useAppTheme } from '@/context/ThemeContext';
 import { getCurrentPlayMode } from '@/utils/playModeUtils';
-import { setupPlayer } from '@/backgroundTasks/TrackPlayerService';
+import { PlayerEmitter, setupPlayer } from '@/backgroundTasks/TrackPlayerService';
 import TrackPlayer, { useProgress, usePlaybackState, RepeatMode, PlaybackActiveTrackChangedEvent } from 'react-native-track-player';
 import { Event, State } from 'react-native-track-player';
 
@@ -72,6 +72,27 @@ const RADIUS = (SIZE - STROKE_WIDTH) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const { width: screenWidth } = Dimensions.get('window');
 const rowWidth = screenWidth * 0.75; // styles.row 的宽度
+
+// 创建一个全局引用用于存储playNext和playPrev函数的引用
+const playerControlRef = {
+    playNext: null as any,
+    playPrev: null as any
+};
+
+// 设置PlayerEmitter监听器，调用playerControlRef中存储的函数
+PlayerEmitter.on('next', () => {
+    console.log('我收到了下一曲');
+    if (playerControlRef.playNext) {
+        playerControlRef.playNext();
+    }
+});
+
+PlayerEmitter.on('prev', () => {
+    console.log('我收到了上一曲');
+    if (playerControlRef.playPrev) {
+        playerControlRef.playPrev();
+    }
+});
 
 // 创建一个全局引用，这样可以从任何地方控制底部弹出层
 export const playingSongListRef = createRef<BottomSheet>();
@@ -186,6 +207,7 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
         if (musicPlayer.playingId <= 0) return;
         TrackPlayer.pause();
         console.log(`开始加载歌曲: ${musicPlayer.playingId}`);
+        TrackPlayer.setVolume(1)
         
         // 记录当前正在加载的歌曲ID
         const currentLoadingId = musicPlayer.playingId;
@@ -228,6 +250,8 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
 
                 // 获取当前播放歌曲信息
                 const playingSong = useMusicPlayer.playingList[useMusicPlayer.playingIndex];
+                console.log(useMusicPlayer.playingIndex,useMusicPlayer.playingList,">>><MNOBI HJNM");
+                
                 const name = `${playingSong.name} ${playingSong.tns?.length ? `(${playingSong.tns[0]})` : ''} ${playingSong.alia?.length ? `(${playingSong.alia[0]})` : ''}`;
                 const artist = playingSong.ar.map(item => item.name).join('/');
                 
@@ -238,11 +262,11 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                 setMiniPlayer(name, artist + '-' + playingSong.al.name, 0, convertHttpToHttps(playingSong.al.picUrl));
                 
                 try {
+                    let TrackQueue = [];
                     // 重置 TrackPlayer
-                    await TrackPlayer.setQueue([]);
                     
                     // 添加将要播放歌曲到 TrackPlayer
-                    await TrackPlayer.add({
+                    TrackQueue.push({
                         id: playingSong.id,
                         url: httpSong,
                         title: name,
@@ -250,7 +274,7 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                         album: playingSong.al.name,
                         artwork: convertHttpToHttps(playingSong.al.picUrl),
                         duration: 0, 
-                    },0);
+                    })
                     //计算下一首曲目
                     const currentPlayingType = await getItem('playingType');
                     // const playingList = useMusicPlayer.playingList;
@@ -260,7 +284,8 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                         const nextSong = useMusicPlayer.playingList[nextIndex];
                         const nextName = `${nextSong.name} ${nextSong.tns?.length ? `(${nextSong.tns[0]})` : ''} ${nextSong.alia?.length ? `(${nextSong.alia[0]})` : ''}`;
                         const nextArtist = nextSong.ar.map(item => item.name).join('/');
-                        await TrackPlayer.add({
+                        
+                        TrackQueue.push({
                             id: useMusicPlayer.playingList[nextIndex].id,
                             url: httpSong,
                             title: nextName,
@@ -268,7 +293,7 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                             album: nextSong.al.name,
                             artwork: convertHttpToHttps(playingSong.al.picUrl),
                             duration: 0, 
-                        });
+                        })
                     }else if(currentPlayingType === PLAYING_LIST_TYPE.RANDOM){
                         let randomIndex;
                         do {
@@ -277,7 +302,7 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                         const randomSong = useMusicPlayer.playingList[randomIndex];
                         const randomName = `${randomSong.name} ${randomSong.tns?.length ? `(${randomSong.tns[0]})` : ''} ${randomSong.alia?.length ? `(${randomSong.alia[0]})` : ''}`;
                         const randomArtist = randomSong.ar.map(item => item.name).join('/');
-                        await TrackPlayer.add({
+                        TrackQueue.push({
                             id: randomSong.id,
                             url: httpSong,
                             title: randomName,
@@ -286,7 +311,9 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                             artwork: convertHttpToHttps(randomSong.al.picUrl),
                             duration: 0, 
                         });
+
                     }
+                    await TrackPlayer.setQueue(TrackQueue);
                     // console.log(await TrackPlayer.getQueue());
                     
                     await TrackPlayer.seekTo(0)
@@ -332,6 +359,46 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
         };
     }, [musicPlayer.playingId]);
 
+    useEffect(() => { 
+        TrackPlayer.getQueue().then(async (queue) => {
+            const nextTrack = queue[1];
+            if(!nextTrack)return
+            if(useMusicPlayer.playingList.length <= 1)return;
+            const playType = await getItem('playingType')
+            if(playType === PLAYING_LIST_TYPE.LOOP_ONE || playType === PLAYING_LIST_TYPE.LOOP){
+                const nextIndex = (useMusicPlayer.playingIndex + 1) % useMusicPlayer.playingList.length;
+                const nextSong = useMusicPlayer.playingList[nextIndex];
+                await TrackPlayer.remove(1)
+                await TrackPlayer.add({
+                    id: nextSong.id,
+                    url: nextTrack.url,
+                    title: nextSong.name,
+                    artist: artist,
+                    album: nextSong.al.name,
+                    artwork: convertHttpToHttps(nextSong.al.picUrl),
+                    duration: 0, 
+                })
+            }else{
+                //RANDOM
+                let nextRandomIndex;
+                do {
+                    nextRandomIndex = getCryptoRandomInt(0, useMusicPlayer.playingList.length - 1);
+                } while (nextRandomIndex === useMusicPlayer.playingIndex && useMusicPlayer.playingList.length > 1);
+                const nextSong = useMusicPlayer.playingList[nextRandomIndex];
+                await TrackPlayer.remove(1)
+                await TrackPlayer.add({
+                    id: nextSong.id,
+                    url: nextTrack.url,
+                    title: nextSong.name,
+                    artist: artist,
+                    album: nextSong.al.name,
+                    artwork: convertHttpToHttps(nextSong.al.picUrl),
+                    duration: 0, 
+                })
+            }
+        })
+    }, [musicPlayer.playingList]);
+
     useEffect(() => {
         if (useMusicPlayer.playingList.length === 0) {
             hideMiniPlayer()
@@ -347,12 +414,6 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
     const changeSoundPlaying = useCallback(async () => {
         console.log(playLockRef.current, "playLock");
         
-        // 如果没有播放列表但有播放列表，加载当前歌曲
-        if (useMusicPlayer.playingList.length > 0 && useMusicPlayer.playingId <= 0) {
-            useMusicPlayer.playingId = useMusicPlayer.playingList[useMusicPlayer.playingIndex].id;
-            return;
-        }
-        
         // 如果锁定中，不执行操作
         if (playLockRef.current) return;
         
@@ -360,10 +421,8 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
             // 使用 playbackState 替代 TrackPlayer.getState()
             if (playbackState.state === State.Playing) {
                 await TrackPlayer.pause();
-                useMusicPlayer.playStatus = 'stop';
             } else {
                 await TrackPlayer.play();
-                useMusicPlayer.playStatus = 'play';
             }
         } catch (error) {
             console.error('切换播放状态失败:', error);
@@ -399,6 +458,8 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
         
         // 如果正在加载中，不执行操作
         if (playLockRef.current) return;
+        await TrackPlayer.pause();
+        await TrackPlayer.setVolume(0)
         
         const playingList = useMusicPlayer.playingList;
         
@@ -421,6 +482,8 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
         
         // 如果正在加载中，不执行操作
         if (playLockRef.current) return;
+        await TrackPlayer.pause();
+        await TrackPlayer.setVolume(0)
         
         const playingList = useMusicPlayer.playingList;
         const currentIndex = useMusicPlayer.playingIndex;
@@ -472,6 +535,18 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
         await TrackPlayer.reset();
         console.log(currentRoute,"????????");
     }, [currentRoute]);
+
+    // 更新playerControlRef，使外部PlayerEmitter可以调用组件内部的函数
+    useEffect(() => {
+        playerControlRef.playNext = playNext;
+        playerControlRef.playPrev = playPrev;
+        
+        return () => {
+            // 组件卸载时清空引用
+            playerControlRef.playNext = null;
+            playerControlRef.playPrev = null;
+        };
+    }, [playNext, playPrev]);
 
     const contextValue: MiniPlayerContextValue = {
         setMiniPlayer,
