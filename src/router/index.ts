@@ -37,7 +37,7 @@ const RootStack = createNativeStackNavigator<RootStackParamList>({
       options:{
         animation: 'slide_from_bottom',
       }
-    }
+    },
   },
   screenOptions: {
     headerShown: false, // 隐藏 Tab 页的默认顶部栏（因为每个 Stack 有自己的头部）

@@ -1,7 +1,8 @@
-
-import { NavigationProp, CompositeScreenProps } from '@react-navigation/native';
+import { NavigationProp, CompositeScreenProps,NavigatorScreenParams } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs'; // 添加 Bottom Tab Navigator
+import { djItemSong } from './api/djItem';
+import { Song } from './Song';
 
 // 定义路由参数类型
 // type RootStackParamList = {
@@ -42,11 +43,15 @@ export type UserCenterStackParamList = {
 
 
 export type PlayListDetailStackParamList = {
-    PlayListDetail: {
+    PlayListDetailHome: {
         id: number;
         createId:number;
         name:string;
         type:'dj' | 'playList';
+    };
+    SongListSearch: {
+        playlistType: 'dj' | 'playList';
+        songList:Song[] | djItemSong[];
     };
 }
 
@@ -69,10 +74,7 @@ export type RootStackParamList = {
         screen: keyof UserCenterStackParamList; // 嵌套导航的屏幕名称
         params: UserCenterStackParamList['UserCenterHome']; // 对应子屏幕的参数类型
     };
-    PlayListDetail:{
-        screen: keyof PlayListDetailStackParamList;
-        params: PlayListDetailStackParamList['PlayListDetail'];
-    };
+    PlayListDetail:NavigatorScreenParams<PlayListDetailStackParamList>
     MusicPlayer: NavigatorScreenParams<MusicPlayerStackParamList>
 };
 

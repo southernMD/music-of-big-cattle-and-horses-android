@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Play, MoveVertical as MoreVertical, CircleArrowDown, ListCheck } from 'lucide-react-native';
 import { PlaylistHeader } from './PlayListHeader';
@@ -18,6 +19,7 @@ import { debounce } from '@/utils/Debounce';
 import { FOOTER_BAR_HEIGHT } from '@/constants/bar';
 import { djItemSong } from '@/types/api/djItem';
 import { RadioDetailInfo } from '@/types/api/RadioDetail';
+import { SongListItem } from './SongListItem';
 
 interface SongListProps {
     songs: Song[] | djItemSong[];
@@ -142,8 +144,12 @@ export function SongList({ songs, onSongPress,playlistDetailMsg,type }: SongList
                 });
             })
         }
-
     };
+
+    const handleSongPress = (item: Song | djItemSong, type: 'dj' | 'playList') => {
+        onSongPress?.(item, type);
+    };
+
     return (
         <StickBarScrollingFlatList
             loading={false}
@@ -175,58 +181,24 @@ export function SongList({ songs, onSongPress,playlistDetailMsg,type }: SongList
                         playlistDetailMsg={playlistDetailMsg}
                     />,
                 FlatListContent: <>
-                    <FlatList
+                    <FlatList<Song | djItemSong>
                         style={{ width: screenWidth }}
                         data={songs}
                         keyExtractor={(item,index) => `${item.id}-${index}`}
                         removeClippedSubviews={false}
                         contentContainerStyle={{ paddingBottom: FOOTER_BAR_HEIGHT }} 
-                        renderItem={({ item,index }:{item:Song | djItemSong,index:number}) => {
-                            return (
-                                <TouchableOpacity
-                                    key={item.id}
-                                    style={styles.songItem}
-                                    onPress={() => onSongPress?.(item,type)}
-                                >
-                                    <Text style={styles.songIndex}>{(index + 1).toString().padStart(2, '0')}</Text>
-                                    <FastImage source={{ uri: convertHttpToHttps('al' in item ?item.al.picUrl:item.coverUrl) }} style={styles.songCover} />
-                                    <View style={styles.songInfo}>
-                                        <Text 
-                                            style={styles.songTitle}
-                                            numberOfLines={1}
-                                            ellipsizeMode='tail'
-                                        >{item.name}</Text>
-                                        <View style={styles.songDetails}>
-                                            {/* {item.quality && (
-                                                <View style={styles.qualityBadge}>
-                                                    <Text style={styles.qualityText}>{item.quality}</Text>
-                                                </View>
-                                            )} */}
-                                            {
-                                                'ar' in item && (
-                                                    <Text 
-                                                        style={styles.artistText}
-                                                        numberOfLines={1}
-                                                        ellipsizeMode='tail'
-                                                    >
-                                                        {item.ar.flatMap(item=>item.name).join("/")+ ' - ' + item.al.name}
-                                                    </Text>
-                                                )
-                                            }
-                                        </View>
-                                    </View>
-                                    <TouchableOpacity style={styles.moreButton}>
-                                        <Icon name="more" size={20} color={typography.colors.medium.default} />
-                                    </TouchableOpacity>
-                                </TouchableOpacity>
-                            )
-                        }}
-
+                        renderItem={({ item, index }) => (
+                            <SongListItem
+                                item={item}
+                                index={index}
+                                onPress={handleSongPress}
+                                type={type}
+                            />
+                        )}
                     />
                 </>
             }}
         >
-
         </StickBarScrollingFlatList>
     );
 }

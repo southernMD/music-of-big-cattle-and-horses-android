@@ -116,12 +116,8 @@ export const djDetail = (rid:number)=>{
 }
 
 //电台节目的详情
-export const djProgramDetail = (rid:number,limit:number = 9999,offset?:number)=>{
-    return fetch<djProgramDetailType>(`/dj/program?rid=${rid}`,{
+export const djProgramDetail = (rid:number,limit:number = 9999,offset:number = 0)=>{
+    return fetch<djProgramDetailType>(`/dj/program?rid=${rid}&limit=${limit}&offset=${offset}`,{
         method:'POST',
-        body:JSON.stringify({
-            limit,
-            offset,
-        })
     })
 }

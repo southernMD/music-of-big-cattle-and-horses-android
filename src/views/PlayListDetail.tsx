@@ -1,8 +1,8 @@
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, DeviceEventEmitter } from 'react-native';
 import { PlaylistHeader } from '@/components/PlayListDetail/PlayListHeader';
 import { SongList } from '@/components/PlayListDetail/SongList';
-import { RouteProp, useRoute } from '@react-navigation/native';
-import { PlayListDetailStackParamList } from '@/types/NavigationType';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { PlayListDetailStackParamList, RootStackNavigationProps } from '@/types/NavigationType';
 import { useEffect, useMemo, useState } from 'react';
 import { djDetail, djProgramDetail, playlistDetail, SongDetail } from '@/api';
 import { Playlist } from '@/types/PlayList';
@@ -12,9 +12,10 @@ import { debounce } from '@/utils/Debounce';
 import { FOOTER_BAR_HEIGHT } from '@/constants/bar';
 import { RadioDetailInfo } from '@/types/api/RadioDetail';
 import { djItemSong } from '@/types/api/djItem';
+import { handlePlaySong } from '@/utils/player/handlePlaySong';
 
 export default function PlayListDetail() {
-    const route = useRoute<RouteProp<PlayListDetailStackParamList>>();
+    const route = useRoute<RouteProp<PlayListDetailStackParamList,'PlayListDetailHome'>>();
     const { id, name, type, createId } = useMemo(() => route.params, [route.params]);
     const [playListSongs, setPlayListSongs] = useState<Playlist['tracks'] | djItemSong[]>([]);
     const [playlistDetailMsg, setPlayListDetailMsg] = useState<Playlist | RadioDetailInfo>();
@@ -30,7 +31,7 @@ export default function PlayListDetail() {
                 djDetail(id),
                 djProgramDetail(id)
             ]).then(([djDetail, djProgramDetail])=>{
-                console.log(djProgramDetail.programs);
+                // console.log(djProgramDetail.programs);
                 setPlayListSongs(djProgramDetail.programs)
                 setPlayListDetailMsg(djDetail.data)
             }).catch(error=>{
@@ -41,57 +42,23 @@ export default function PlayListDetail() {
         }
     },[])
 
-    // 原始的 playSong 函数
-    const handlePlaySong = async (song: Song | djItemSong, type: 'dj' | 'playList') => {
-        console.log('Pressed song:', song.name)
-        //以下实现的是将歌曲添加到播放列表并播放
-        if(true){
-            const indexInPlayingList = useMusicPlayer.playingList.findIndex((item)=>item.id === song.id)
-            if(type === 'playList'){
-                if(indexInPlayingList === -1){
-                   await SongDetail([song.id]).then(({privileges,songs})=>{
-                        const newIndex = useMusicPlayer.playingIndex + 1;
-                        useMusicPlayer.playingIndex = newIndex;
-                        useMusicPlayer.playingList.splice(newIndex,0,...songs)
-                        useMusicPlayer.playingPrivileges.splice(newIndex,0,...privileges)
-                    })
-                }else{
-                    useMusicPlayer.playingIndex = indexInPlayingList
-                }
-                useMusicPlayer.PlayingListId = -1
-                useMusicPlayer.playingId = song.id
-            }else if(type === 'dj'){
-                if(indexInPlayingList === -1){
-                    (song as djItemSong).id = (song as djItemSong).mainTrackId
-                    const newIndex = useMusicPlayer.playingIndex + 1;
-                    useMusicPlayer.playingIndex = newIndex;
-                    useMusicPlayer.playingList.splice(newIndex,0,song)
-                    useMusicPlayer.playingPrivileges.splice(newIndex,0,{
-                        id:(song as djItemSong).mainTrackId,
-                        maxBrLevel: "DJ",
-                        playMaxBrLevel: "DJ",
-                        downloadMaxBrLevel: "DJ",
-                        plLevel: "DJ",
-                        dlLevel: "DJ",
-                        flLevel: "DJ",
-                    } as any)
-                    useMusicPlayer.PlayingListId = -1
-                    useMusicPlayer.playingId = song.id
-                }else{
-                    useMusicPlayer.playingIndex = indexInPlayingList
-                }
-            }
-
-        }else{
-            //歌单全部歌曲添加到播放列表
-            useMusicPlayer.PlayingListId = id
-        }
-    }
-    
     // 使用 useCallback 和 debounce 创建防抖版本的 playSong
     // 设置 300ms 的防抖时间，并且设置为非立即执行模式
     const playSong = debounce(handlePlaySong, 300, false)
-
+    const navigation = useNavigation<RootStackNavigationProps>();
+    useEffect(()=>{
+        DeviceEventEmitter.addListener('SongListSearch',()=>{
+            navigation.navigate('PlayListDetail',{
+                screen:'SongListSearch',
+                params:{
+                    playlistType:type,songList:playListSongs
+                }
+            });
+        })
+        return ()=>{
+            DeviceEventEmitter.removeAllListeners('SongListSearch');
+        }
+    },[playListSongs])
     return (
         <>
             <View style={styles.container}>

@@ -1,4 +1,4 @@
-import React, { memo, useRef, useCallback, cloneElement } from "react";
+import React, { memo, useRef, useCallback, cloneElement, useState } from "react";
 import {
     View,
     NativeScrollEvent,
@@ -7,7 +7,7 @@ import {
     Dimensions,
     FlatList,
 } from "react-native";
-import Animated, { useSharedValue, useAnimatedStyle, SharedValue } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, SharedValue, runOnJS } from "react-native-reanimated";
 import TabBar from "@/components/UserCenter/TabBar";
 import { useThrottleCallback } from "@/hooks/useThrottleCallback";
 import LevelScrollView, { LevelScrollViewRef } from "@/components/StickBarScrollingFlatList/LevelScrollView";
@@ -33,12 +33,13 @@ interface Props {
 const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling, loading,panGesture,itemWidth = screenWidth,heightList }) => {
     const horizontalScrollX = useSharedValue(0);
     const translateY = useSharedValue(0);
-
+    const [startIndex,setStartIndex] = useState(0);
     const throttledTabChange = useThrottleCallback((key: string) => {
         const index = tabs!.findIndex(tab => tab.key === key);
         if (index !== -1) {
             levelScrollViewRef.current?.scrollRef.current?.scrollTo({ x: index * itemWidth, animated: true });
             horizontalScrollX.value = index * itemWidth;
+            runOnJS(setStartIndex)(index)
         }
     }, 200);
     const levelScrollViewRef = useRef<LevelScrollViewRef>(null)
@@ -76,6 +77,9 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
         const { y } = event.nativeEvent.contentOffset;
         translateY.value = BaseTop.current - y <= HEADER_BAR_HEIGHT ? HEADER_BAR_HEIGHT : 0;
     }
+    const FinishHorizontalScrollHandle = useCallback(()=>{
+        setStartIndex(horizontalScrollX.value / itemWidth)
+    },[])
 
     return (
         <View>
@@ -90,6 +94,7 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
             </Animated.View>
 
             <LevelScrollView
+                startIndex={startIndex}
                 Scrolling={ScrollingUserCenter}
                 blockLen={tabs?.length || 0}
                 loading={loading}
@@ -99,6 +104,7 @@ const StickBarScrollingFlatList: React.FC<Props> = ({ children, tabs, Scrolling,
                 itemWidth={itemWidth}
                 heightList={heightList}
                 contentContainerStyle={{paddingBottom:FOOTER_BAR_HEIGHT}}
+                FinishHorizontalScrollHandle={FinishHorizontalScrollHandle}
             >
                 <>
                     {children.HeaderContent}

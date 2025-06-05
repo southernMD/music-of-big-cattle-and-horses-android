@@ -71,6 +71,7 @@ const LevelScrollView = forwardRef<LevelScrollViewRef, Props>(({
       'worklet';
       scrollTo(scrollRef, startIndex * itemWidth, 0, false);
     })();
+    // console.log(children[1]);
     console.log("执行 scrollTo:", startIndex * itemWidth);
     horizontalScrollX.value = startIndex * itemWidth;
   }, [children[1]]);

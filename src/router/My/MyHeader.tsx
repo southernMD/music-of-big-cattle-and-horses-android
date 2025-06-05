@@ -51,7 +51,7 @@ export const CustomHeaderTitle = ({ title }: { title: string }) => {
           <Icon name="search" size={20} color={typography.colors.small.default} />
         </Pressable>
 
-        <Pressable onPress={() => navigation.navigate('Setting')} style={styles.iconPressable}>
+        <Pressable onPress={() => navigation.navigate('Setting',{screen:'SettingHome'})} style={styles.iconPressable}>
           <Icon name="setting" size={20} color={typography.colors.small.default} />
         </Pressable>
 

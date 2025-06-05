@@ -53,7 +53,7 @@ function PlaylistItem({ createId,id,image, type, title, count, plays, onPress }:
   const MyPress = useCallback(() => {
     if (onPress) onPress()
     navigation.navigate('PlayListDetail', {
-      screen: 'PlayListDetail',
+      screen: 'PlayListDetailHome',
       params: {
         id,
         createId,
