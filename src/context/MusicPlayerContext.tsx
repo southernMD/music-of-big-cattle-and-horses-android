@@ -254,7 +254,7 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
 
                 // 获取当前播放歌曲信息
                 const playingSong = useMusicPlayer.playingList[useMusicPlayer.playingIndex];
-                console.log(useMusicPlayer.playingIndex,useMusicPlayer.playingList,">>><MNOBI HJNM");
+                // console.log(useMusicPlayer.playingIndex,useMusicPlayer.playingList,">>><MNOBI HJNM");
                 
                 const name = 'dj' in playingSong ? playingSong.name : `${playingSong.name} ${playingSong.tns?.length ? `(${playingSong.tns[0]})` : ''} ${playingSong.alia?.length ? `(${playingSong.alia[0]})` : ''}`;
                 const artist = 'ar' in playingSong ? 
@@ -281,7 +281,7 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                     
                     // 添加将要播放歌曲到 TrackPlayer
                     TrackQueue.push({
-                        id: playingSong.id,
+                        id: 'dj' in playingSong ? playingSong.mainTrackId : playingSong.id,
                         url: httpSong,
                         title: name,
                         artist: artist,
@@ -298,9 +298,9 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                         const nextSong = useMusicPlayer.playingList[nextIndex];
                         const nextName = 'dj' in nextSong ? `${nextSong.name}`: `${nextSong.name} ${nextSong.tns?.length ? `(${nextSong.tns[0]})` : ''} ${nextSong.alia?.length ? `(${nextSong.alia[0]})` : ''}`;
                         const nextArtist = 'ar' in nextSong ? nextSong.ar.map(item => item.name).join('/') : nextSong.dj.nickname;
-                        
+                        const nexSong = useMusicPlayer.playingList[nextIndex]
                         TrackQueue.push({
-                            id: useMusicPlayer.playingList[nextIndex].id,
+                            id: 'dj' in nexSong ? nexSong.mainTrackId : nexSong.id,
                             url: httpSong,
                             title: nextName,
                             artist: nextArtist,
@@ -317,7 +317,7 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                         const randomName = 'dj' in randomSong ? `${randomSong.name}`: `${randomSong.name} ${randomSong.tns?.length ? `(${randomSong.tns[0]})` : ''} ${randomSong.alia?.length ? `(${randomSong.alia[0]})` : ''}`
                         const randomArtist = 'ar' in randomSong ? randomSong.ar.map(item => item.name).join('/') : randomSong.dj.nickname;
                         TrackQueue.push({
-                            id: randomSong.id,
+                            id: 'dj' in randomSong? randomSong.mainTrackId : randomSong.id,
                             url: httpSong,
                             title: randomName,
                             artist: randomArtist,
@@ -384,7 +384,7 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                 const nextSong = useMusicPlayer.playingList[nextIndex];
                 await TrackPlayer.remove(1)
                 await TrackPlayer.add({
-                    id: nextSong.id,
+                    id: 'dj' in nextSong? nextSong.mainTrackId:nextSong.id,
                     url: nextTrack.url,
                     title: nextSong.name,
                     artist: artist,
@@ -401,7 +401,7 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                 const nextSong = useMusicPlayer.playingList[nextRandomIndex];
                 await TrackPlayer.remove(1)
                 await TrackPlayer.add({
-                    id: nextSong.id,
+                    id: 'dj' in nextSong? nextSong.mainTrackId:nextSong.id,
                     url: nextTrack.url,
                     title: nextSong.name,
                     artist: artist,
@@ -519,13 +519,17 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
                 nextRandomIndex = getCryptoRandomInt(0, playingList.length - 1);
             } while (nextRandomIndex === currentIndex && playingList.length > 1);
             
+            const song = playingList[nextRandomIndex]
+
             useMusicPlayer.playingIndex = nextRandomIndex;
-            useMusicPlayer.playingId = playingList[nextRandomIndex].id;
+            useMusicPlayer.playingId = 'dj' in song ? song.mainTrackId: song.id
         } else {
             // 列表循环或单曲循环：播放上一首
             const prevIndex = (currentIndex - 1 + playingList.length) % playingList.length;
+            const song = playingList[prevIndex]
+
             useMusicPlayer.playingIndex = prevIndex;
-            useMusicPlayer.playingId = playingList[prevIndex].id;
+            useMusicPlayer.playingId = 'dj' in song ? song.mainTrackId: song.id
         }
     }, []);
 
@@ -536,7 +540,8 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
         if(index < useMusicPlayer.playingIndex){
             useMusicPlayer.playingIndex--;
         }else{
-            useMusicPlayer.playingId = useMusicPlayer.playingList[useMusicPlayer.playingIndex].id;
+            const nextSong = useMusicPlayer.playingList[useMusicPlayer.playingIndex]
+            useMusicPlayer.playingId = 'dj' in nextSong ? nextSong.mainTrackId : nextSong.id
         }
     }, [musicPlayer.playingList,musicPlayer.playingId,musicPlayer.playingIndex]);
     
@@ -716,7 +721,7 @@ const MusicPlayerMiniFlatList = memo(() => {
         // TODO: 非最佳解决办法，只是展示屏蔽了切换显示
         setIsVisible(false);
         
-        const index = musicPlayer.playingList.findIndex(item=>item.id === playingSongNearly[newIndex].id);
+        const index = useMusicPlayer.playingList.findIndex(item=>item.id === playingSongNearly[newIndex].id);
         if(index === -1) {
             setIsVisible(true);
             return;
@@ -732,7 +737,7 @@ const MusicPlayerMiniFlatList = memo(() => {
         
         // 更新播放索引和ID
         useMusicPlayer.playingIndex = index;
-        useMusicPlayer.playingId = playingSongNearly[newIndex].id;
+        useMusicPlayer.playingId = 'dj' in playingSongNearly[newIndex] ? playingSongNearly[newIndex].mainTrackId : playingSongNearly[newIndex].id
         
         // 在下一帧再显示内容
         requestAnimationFrame(() => {

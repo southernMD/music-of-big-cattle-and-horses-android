@@ -143,6 +143,8 @@ export function SongList({ songs, onSongPress,playlistDetailMsg,type }: SongList
                     position: 'bottom'
                 });
             })
+        }else if(type === 'dj'){
+            await playAllMusic({ programs:songs as djItemSong[], })
         }
     };
 

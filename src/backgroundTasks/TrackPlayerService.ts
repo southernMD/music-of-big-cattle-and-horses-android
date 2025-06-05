@@ -82,7 +82,9 @@ TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, async (event) => 
     useMusicPlayer.playStatus = 'stop';
     console.log("赋值了啊啊啊啊啊啊啊啊啊啊啊啊啊", useMusicPlayer.playingId, event.track!.id);
     useMusicPlayer.playingId = event.track!.id;
-    useMusicPlayer.playingIndex = useMusicPlayer.playingList.findIndex(item => item.id === event.track!.id)
+    useMusicPlayer.playingIndex = useMusicPlayer.playingList.findIndex(item => {
+      return 'dj' in item ? item.mainTrackId === event.track!.id :item.id === event.track!.id
+    })
   }
 });
 
