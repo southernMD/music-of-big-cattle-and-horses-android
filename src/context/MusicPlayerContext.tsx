@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, memo, useEffect, useMemo, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Pressable, Dimensions, BackHandler } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Pressable, Dimensions, BackHandler, InteractionManager } from 'react-native';
 import { List, Pause, Play } from 'lucide-react-native';
 import { ParamListRoute } from '@react-navigation/native';
 import { FOOTER_BAR_HEIGHT, NEED_FOOTER_BAR_ROUTE } from '@/constants/bar';
@@ -25,6 +25,8 @@ import { getCurrentPlayMode } from '@/utils/playModeUtils';
 import { PlayerEmitter, setupPlayer } from '@/backgroundTasks/TrackPlayerService';
 import TrackPlayer, { useProgress, usePlaybackState, RepeatMode, PlaybackActiveTrackChangedEvent } from 'react-native-track-player';
 import { Event, State } from 'react-native-track-player';
+import { Song } from '@/types/Song';
+import { djItemSong } from '@/types/api/djItem';
 
 interface MiniPlayerContextValue {
     setMiniPlayer: (title: string, artist: string, progress: number, cover: string) => void;
@@ -42,8 +44,9 @@ interface MiniPlayerContextValue {
     changeSoundPlaying: () => void;
     playNext: () => void;
     playPrev: () => void;
-    removeFromPlayingList:(id:number,index:number) => void
-    removeAllFromPlayingList:() => void
+    removeFromPlayingList:(id:number,index:number) => void;
+    removeAllFromPlayingList:() => void;
+    updatePlayingList:(newList: (Song | djItemSong)[]) => void;
 }
 
 interface MusicPlayerProps { 
@@ -63,7 +66,8 @@ const MiniPlayerContext = createContext<MiniPlayerContextValue>({
     playNext: () => { },
     playPrev: () => { },
     removeFromPlayingList:() => {},
-    removeAllFromPlayingList:() => {}
+    removeAllFromPlayingList:() => {},
+    updatePlayingList:() => {}
 });
 
 const SIZE = 25;
@@ -558,6 +562,25 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
         };
     }, [playNext, playPrev]);
 
+    const updatePlayingList = useCallback((newList: (Song | djItemSong)[]) => {
+        InteractionManager.runAfterInteractions(()=>{
+            // 保存当前播放的歌曲ID
+            const currentPlayingId = useMusicPlayer.playingId;
+            
+            // 更新播放列表
+            useMusicPlayer.playingList = newList;
+            
+            // 找到当前播放歌曲在新列表中的索引
+            const newPlayingIndex = newList.findIndex(item => item.id === currentPlayingId);
+            
+            // 更新播放索引
+            if (newPlayingIndex !== -1) {
+                useMusicPlayer.playingIndex = newPlayingIndex;
+            }
+        })
+
+    }, [musicPlayer.playingId]);
+    
     const contextValue: MiniPlayerContextValue = {
         setMiniPlayer,
         hideMiniPlayer,
@@ -568,7 +591,8 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
         playNext,
         playPrev,
         removeFromPlayingList,
-        removeAllFromPlayingList
+        removeAllFromPlayingList,
+        updatePlayingList
     };
 
     // 使用主题创建样式

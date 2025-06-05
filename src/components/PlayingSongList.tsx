@@ -1,6 +1,6 @@
-import React, { forwardRef, useCallback, useMemo } from 'react';
+import React, { forwardRef, memo, useCallback, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetFlatList } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSnapshot } from 'valtio';
 import { useMusicPlayer } from '@/store';
@@ -10,17 +10,125 @@ import { PlayModeToggle } from './MusicPlayer/PlayModeToggle';
 import { Song } from '@/types/Song';
 import { useMiniPlayer } from '@/context/MusicPlayerContext';
 import { djItemSong } from '@/types/api/djItem';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+
+// 创建一个自定义的比较函数，只在必要的属性变化时才重新渲染
+const arePropsEqual = (prevProps: any, nextProps: any) => {
+  // 如果是当前播放项或者变成了当前播放项，需要重新渲染
+  if (prevProps.index === prevProps.playingIndex || nextProps.index === nextProps.playingIndex) {
+    return prevProps.playingIndex === nextProps.playingIndex;
+  }
+  
+  // 如果拖拽状态变化，需要重新渲染
+  if (prevProps.isActive !== nextProps.isActive) {
+    return false;
+  }
+  
+  // 如果项目ID变化，需要重新渲染
+  if (prevProps.item.id !== nextProps.item.id) {
+    return false;
+  }
+  
+  // 如果索引变化，需要重新渲染
+  if (prevProps.index !== nextProps.index) {
+    return false;
+  }
+  
+  // 其他情况不需要重新渲染
+  return true;
+};
+
+// 创建一个记忆化的列表项组件
+const SongListItem = memo(({ 
+  item, 
+  drag, 
+  isActive, 
+  index,
+  playingIndex,
+  onItemPress,
+  onDeletePress,
+  theme
+}: { 
+  item: Song | djItemSong, 
+  drag: () => void, 
+  isActive: boolean,
+  index: number,
+  playingIndex: number,
+  onItemPress: (index: number, id: number) => void,
+  onDeletePress: (item: Song | djItemSong, index: number) => void,
+  theme: any
+}) => {
+  const isPlaying = index === playingIndex;
+  const name = item.name;
+  const artist = "ar" in item? item.ar.map((item: any) => item.name).join('/') : item.dj.nickname;
+  
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  
+  const handlePress = useCallback(() => {
+    onItemPress(index, item.id);
+  }, [index, item.id, onItemPress]);
+  
+  const handleDelete = useCallback((e: any) => {
+    e.stopPropagation();
+    onDeletePress(item, index);
+  }, [item, index, onDeletePress]);
+  
+  console.log("渲染项", item.id, index, isPlaying ? "【播放中】" : "");
+  
+  return (
+    <ScaleDecorator>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        delayLongPress={150}
+        onLongPress={drag}
+        onPress={handlePress}
+      >
+        <Animated.View style={[
+          styles.playlistItem,
+          isActive && styles.activeItem
+        ]}>
+          {isPlaying && (
+            <View style={styles.nowPlayingIndicator}>
+              <View style={styles.playingBar}></View>
+            </View>
+          )}
+          <View style={styles.textContainer}>
+            <Text 
+              style={[styles.songName, isPlaying && styles.playingText]} 
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {name}
+              <Text style={[styles.separator, isPlaying && styles.playingText]}> · </Text>
+              <Text style={[styles.artistName, isPlaying && styles.playingText]}>{artist}</Text>
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.deleteButton}
+            onPress={handleDelete}
+          >
+            <X color={theme.typography.colors.small.default} size={16} />
+          </TouchableOpacity>
+        </Animated.View>
+      </TouchableOpacity>
+    </ScaleDecorator>
+  );
+}, arePropsEqual);
 
 // 修改为 forwardRef 接受外部 ref
 const PlayingSongList = forwardRef<BottomSheet>((props, ref) => {
   const theme = useAppTheme();
-  const { removeFromPlayingList,removeAllFromPlayingList } = useMiniPlayer();
+  const { removeFromPlayingList, removeAllFromPlayingList, updatePlayingList } = useMiniPlayer();
   // 安全区域插入值
   const insets = useSafeAreaInsets();
   
   // 获取音乐播放器状态
   const musicPlayer = useSnapshot(useMusicPlayer);
   
+  // 使用useRef保存列表数据，避免不必要的重渲染
+  const listData = useMemo(() => Array.from(useMusicPlayer.playingList) as (Song | djItemSong)[], [musicPlayer.playingList]);
+
   // 底部弹出层的停靠点 - 确保只有一个固定的70%高度
   const snapPoints = useMemo(() => ['70%'], []);
   
@@ -65,51 +173,59 @@ const PlayingSongList = forwardRef<BottomSheet>((props, ref) => {
     console.log('删除歌曲', index);
   }, [musicPlayer.playingList,handleClearPlaylist]);
 
+  // 处理拖拽排序完成后的数据更新
+  // TODO: 有闪烁问题，很可能是拖拽库本身的问题
+  const handleDragEnd = useCallback(({ data, from, to }: { data: (Song | djItemSong)[]; from: number; to: number }) => {
+    console.log('拖拽排序完成，从', from, '到', to);
+    if (from === to) return; // 如果位置没有变化，不做任何操作
+    updatePlayingList(data);
+    const currentPlayingId = musicPlayer.playingId;
+    // 找到当前播放歌曲的新索引
+    const newPlayingIndex = data.findIndex(item => item.id === currentPlayingId);
+    
+    // 更新播放索引
+    if (newPlayingIndex !== -1 && newPlayingIndex !== musicPlayer.playingIndex) {
+      useMusicPlayer.playingIndex = newPlayingIndex;
+    }
+  }, [updatePlayingList, musicPlayer.playingId, musicPlayer.playingIndex]);
 
-
+  // 处理点击歌曲项
+  const handleItemPress = useCallback((index: number, id: number) => {
+    useMusicPlayer.playingIndex = index;
+    useMusicPlayer.playingId = id;
+  }, []);
 
   // 使用主题创建样式
   const styles = useMemo(() => createStyles(theme), [theme]);
 
+  // 计算项目高度以优化性能
+  const ITEM_HEIGHT = 60; // 每个项目的高度，根据您的样式调整
+  
+  // 提前计算每个项目的布局，避免动态测量
+  const getItemLayout = useCallback((data: any, index: number) => ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * index,
+    index,
+  }), []);
+
   // 渲染歌曲列表项
-  const renderItem = useCallback(({item, index}: {item: Song | djItemSong, index: number}) => {
-    const isPlaying = index === musicPlayer.playingIndex;
-    const name = item.name;
-    const artist = "ar" in item? item.ar.map((item: any) => item.name).join('/') : item.dj.nickname;
+  const renderItem = useCallback(({item, drag, isActive, getIndex}: RenderItemParams<Song | djItemSong>) => {
+    // 使用getIndex()获取索引，如果为undefined则使用查找方法
+    const index = getIndex ? getIndex() : useMusicPlayer.playingList.findIndex(song => song.id === item.id);
     
     return (
-      <TouchableOpacity 
-        style={styles.playlistItem}
-        onPress={() => {
-          useMusicPlayer.playingIndex = index;
-          useMusicPlayer.playingId = item.id;
-        }}
-      >
-        {isPlaying && (
-          <View style={styles.nowPlayingIndicator}>
-            <View style={styles.playingBar}></View>
-          </View>
-        )}
-        <View style={styles.textContainer}>
-          <Text 
-            style={[styles.songName, isPlaying && styles.playingText]} 
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {name}
-            <Text style={[styles.separator, isPlaying && styles.playingText]}> · </Text>
-            <Text style={[styles.artistName, isPlaying && styles.playingText]}>{artist}</Text>
-          </Text>
-        </View>
-        <TouchableOpacity 
-          style={styles.deleteButton}
-          onPress={() => handleDeleteSong(item,index)}
-        >
-          <X color={theme.typography.colors.small.default} size={16} />
-        </TouchableOpacity>
-      </TouchableOpacity>
+      <SongListItem
+        item={item}
+        drag={drag}
+        isActive={isActive}
+        index={index || 0}
+        playingIndex={musicPlayer.playingIndex}
+        onItemPress={handleItemPress}
+        onDeletePress={handleDeleteSong}
+        theme={theme}
+      />
     );
-  }, [musicPlayer.playingIndex, handleDeleteSong, styles, theme]);
+  }, [musicPlayer.playingIndex, handleDeleteSong, handleItemPress, theme]);
 
   // 获取窗口高度以计算70%高度
   const windowHeight = Dimensions.get('window').height;
@@ -125,7 +241,7 @@ const PlayingSongList = forwardRef<BottomSheet>((props, ref) => {
       handleIndicatorStyle={styles.indicator}
       backgroundStyle={styles.bottomSheetBackground}
       enableOverDrag={false}
-      enableContentPanningGesture={true}
+      enableContentPanningGesture={false} // 禁用内容区域的平移手势
       enableHandlePanningGesture={true}
       onClose={handleSheetClose}
       detached={false}
@@ -153,15 +269,6 @@ const PlayingSongList = forwardRef<BottomSheet>((props, ref) => {
         
         {/* 功能按钮区域 - 播放模式和清空按钮 */}
         <View style={styles.functionBar}>
-          {/* <TouchableOpacity style={styles.functionButton} onPress={handleTogglePlayMode}>
-            <View style={styles.functionIconContainer}>
-              {React.createElement(currentMode.icon, { 
-                color: theme.colors.primary, 
-                size: 16 
-              })}
-            </View>
-            <Text style={styles.functionText}>{currentMode.label}</Text>
-          </TouchableOpacity> */}
           <PlayModeToggle size={16} />
           
           <View style={styles.spacer} />
@@ -173,18 +280,33 @@ const PlayingSongList = forwardRef<BottomSheet>((props, ref) => {
         
         {/* 外层容器确保最小高度 */}
         <View style={{ flex: 1, minHeight }}>
-          {/* 歌曲列表 - 使用 BottomSheetFlatList 替代 FlatList */}
-          <BottomSheetFlatList
-            data={useMusicPlayer.playingList}
-            keyExtractor={(item) => `${item.id}`}
+          {/* 歌曲列表 - 使用 DraggableFlatList 替换 FlatList */}
+          <DraggableFlatList
+            // 使用ref中的数据，避免直接操作Valtio代理对象
+            data={listData}
+            keyExtractor={(item, index) => JSON.stringify(item)}
             renderItem={renderItem}
+            onDragEnd={handleDragEnd}
+            // 只在playingIndex变化时重新渲染列表
+            extraData={musicPlayer.playingIndex}
+            // 提前计算项目布局，避免动态测量
+            getItemLayout={getItemLayout}
             contentContainerStyle={[
               styles.flatListContent,
               musicPlayer.playingList.length < 5 && { flexGrow: 1 } // 项目少时撑满空间
             ]}
             showsVerticalScrollIndicator={true}
             bounces={false} // 禁用弹性效果
-            overScrollMode="never" // 禁用过度滚动效果
+            activationDistance={5} // 减小激活拖拽的距离
+            keyboardShouldPersistTaps="handled" // 确保拖拽时键盘不会消失
+            // 使用windowSize减少渲染范围
+            windowSize={5}
+            // 减少初始渲染数量
+            initialNumToRender={8}
+            // 减少维护在内存中的项目数量
+            maxToRenderPerBatch={5}
+            updateCellsBatchingPeriod={50}
+            removeClippedSubviews={false}
           />
         </View>
       </View>
@@ -268,11 +390,24 @@ const createStyles = (theme: any) => StyleSheet.create({
   playlistItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8, // 减小行高
+    paddingVertical: 12, // 增加行高以便于点击
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: theme.line.light,
     position: 'relative',
+    backgroundColor: theme.box.background.shallow,
+  },
+  activeItem: {
+    backgroundColor: theme.box.background.middle,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 5,
+    zIndex: 999,
   },
   nowPlayingIndicator: {
     position: 'absolute',
@@ -291,7 +426,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   textContainer: {
     flex: 1,
-    marginLeft: 8,
+    paddingLeft: 8, // 添加左侧内边距
   },
   songName: {
     fontSize: theme.typography.sizes.small,
@@ -321,4 +456,4 @@ const createStyles = (theme: any) => StyleSheet.create({
 });
 
 // 导出组件
-export default PlayingSongList;
+export default memo(PlayingSongList);

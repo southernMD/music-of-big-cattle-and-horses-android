@@ -30,6 +30,7 @@
     "react-native-asset": "^2.1.1",
     "react-native-background-timer": "^2.4.1",
     "react-native-canvas": "^0.1.40",
+    "react-native-draggable-flatlist": "^4.0.3",
     "react-native-fast-image": "^8.6.3",
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.25.0",
