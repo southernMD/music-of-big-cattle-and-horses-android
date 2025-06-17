@@ -95,4 +95,9 @@ TrackPlayer.addEventListener(Event.PlaybackState, (event) => {
   if(event.state === State.Ready){
     TrackPlayer.play();
   }
+  if(event.state !== State.Playing){
+    TrackPlayer.setVolume(0)
+  }else{
+    TrackPlayer.setVolume(1)
+  }
 });

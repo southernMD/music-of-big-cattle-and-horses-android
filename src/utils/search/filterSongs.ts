@@ -25,33 +25,41 @@ export const filterSongs = (songList: (Song | djItemSong)[], query: string): (So
     return songList.filter(song => {
         // 检查歌曲是普通歌曲还是电台节目
         if ('ar' in song) {
-            // 普通歌曲 (Song)
-            // 搜索歌曲名称
-            const songName = song.name.toLowerCase();
-            // 转换为拼音，使用 pinyin-pro
-            const songNamePinyin = pinyin(songName, { toneType: 'none', type: 'array' }).join('').toLowerCase();
-            const songNameRomaji = wanakana.toRomaji(songName).toLowerCase();
-            
-            if (
-                songName.includes(normalizedQuery) ||
-                songNamePinyin.includes(normalizedQuery) ||
-                songNameRomaji.includes(romajiQuery)
-            ) {
-                return true;
+            try {
+                // 普通歌曲 (Song)
+                // 搜索歌曲名称
+                const songName = song.name.toLowerCase();
+                // 转换为拼音，使用 pinyin-pro
+                const songNamePinyin = pinyin(songName, { toneType: 'none', type: 'array' }).join('').toLowerCase();
+                const songNameRomaji = wanakana.toRomaji(songName).toLowerCase();
+                
+                if (
+                    songName.includes(normalizedQuery) ||
+                    songNamePinyin.includes(normalizedQuery) ||
+                    songNameRomaji.includes(romajiQuery)
+                ) {
+                    return true;
+                }
+            } catch (error) {
+                return false;
             }
             
             // 搜索艺术家名称
             const artistMatch = song.ar.some(artist => {
-                const artistName = artist.name.toLowerCase();
-                // 转换为拼音，使用 pinyin-pro
-                const artistNamePinyin = pinyin(artistName, { toneType: 'none', type: 'array' }).join('').toLowerCase();
-                const artistNameRomaji = wanakana.toRomaji(artistName).toLowerCase();
-                
-                return (
-                    artistName.includes(normalizedQuery) ||
-                    artistNamePinyin.includes(normalizedQuery) ||
-                    artistNameRomaji.includes(romajiQuery)
-                );
+                try {
+                    const artistName = artist.name.toLowerCase();
+                    // 转换为拼音，使用 pinyin-pro
+                    const artistNamePinyin = pinyin(artistName, { toneType: 'none', type: 'array' }).join('').toLowerCase();
+                    const artistNameRomaji = wanakana.toRomaji(artistName).toLowerCase();
+                    
+                    return (
+                        artistName.includes(normalizedQuery) ||
+                        artistNamePinyin.includes(normalizedQuery) ||
+                        artistNameRomaji.includes(romajiQuery)
+                    );
+                } catch (error) {
+                    return false;
+                }
             });
             
             if (artistMatch) {
@@ -59,46 +67,57 @@ export const filterSongs = (songList: (Song | djItemSong)[], query: string): (So
             }
             
             // 搜索专辑名称
-            const albumName = song.al.name.toLowerCase();
-            // 转换为拼音，使用 pinyin-pro
-            const albumNamePinyin = pinyin(albumName, { toneType: 'none', type: 'array' }).join('').toLowerCase();
-            const albumNameRomaji = wanakana.toRomaji(albumName).toLowerCase();
-            
-            return (
-                albumName.includes(normalizedQuery) ||
-                albumNamePinyin.includes(normalizedQuery) ||
-                albumNameRomaji.includes(romajiQuery)
-            );
+            try {
+                const albumName = song.al.name.toLowerCase();
+                // 转换为拼音，使用 pinyin-pro
+                const albumNamePinyin = pinyin(albumName, { toneType: 'none', type: 'array' }).join('').toLowerCase();
+                const albumNameRomaji = wanakana.toRomaji(albumName).toLowerCase();
+                
+                return (
+                    albumName.includes(normalizedQuery) ||
+                    albumNamePinyin.includes(normalizedQuery) ||
+                    albumNameRomaji.includes(romajiQuery)
+                );
+            } catch (error) {
+                return false
+            }
         } else {
             // 电台节目 (djItemSong)
             // 搜索节目名称
-            const programName = song.name.toLowerCase();
-            // 转换为拼音，使用 pinyin-pro
-            const programNamePinyin = pinyin(programName, { toneType: 'none', type: 'array' }).join('').toLowerCase();
-            const programNameRomaji = wanakana.toRomaji(programName).toLowerCase();
-            
-            if (
-                programName.includes(normalizedQuery) ||
-                programNamePinyin.includes(normalizedQuery) ||
-                programNameRomaji.includes(romajiQuery)
-            ) {
-                return true;
-            }
-            
-            // 搜索电台名称 (如果有)
-            if (song.radio && song.radio.name) {
-                const radioName = song.radio.name.toLowerCase();
+            try {
+                const programName = song.name.toLowerCase();
                 // 转换为拼音，使用 pinyin-pro
-                const radioNamePinyin = pinyin(radioName, { toneType: 'none', type: 'array' }).join('').toLowerCase();
-                const radioNameRomaji = wanakana.toRomaji(radioName).toLowerCase();
+                const programNamePinyin = pinyin(programName, { toneType: 'none', type: 'array' }).join('').toLowerCase();
+                const programNameRomaji = wanakana.toRomaji(programName).toLowerCase();
                 
-                return (
-                    radioName.includes(normalizedQuery) ||
-                    radioNamePinyin.includes(normalizedQuery) ||
-                    radioNameRomaji.includes(romajiQuery)
-                );
+                if (
+                    programName.includes(normalizedQuery) ||
+                    programNamePinyin.includes(normalizedQuery) ||
+                    programNameRomaji.includes(romajiQuery)
+                ) {
+                    return true;
+                }
+            } catch (error) {
+                return false;
             }
-            
+
+            // 搜索电台名称 (如果有)
+            try {
+                if (song.radio && song.radio.name) {
+                    const radioName = song.radio.name.toLowerCase();
+                    // 转换为拼音，使用 pinyin-pro
+                    const radioNamePinyin = pinyin(radioName, { toneType: 'none', type: 'array' }).join('').toLowerCase();
+                    const radioNameRomaji = wanakana.toRomaji(radioName).toLowerCase();
+                    
+                    return (
+                        radioName.includes(normalizedQuery) ||
+                        radioNamePinyin.includes(normalizedQuery) ||
+                        radioNameRomaji.includes(romajiQuery)
+                    );
+                }
+            } catch (error) {
+                return false
+            }
             return false;
         }
     });

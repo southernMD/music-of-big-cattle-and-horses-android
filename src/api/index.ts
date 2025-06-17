@@ -60,13 +60,9 @@ export const quitLogin = async ()=>{
     });
 }
 
-export const userPlaylist = async (uid:number,limit = 30,offset = 0)=>{
-    return await fetch<UserPlaylistType>(`/user/playlist?uid=${uid}`, {
+export const userPlaylist = async (uid:number,limit = 999999,offset = 0)=>{
+    return await fetch<UserPlaylistType>(`/user/playlist?uid=${uid}&limit=${limit}&offset=${offset}`, {
         method: 'POST',
-        body:JSON.stringify({
-            limit,
-            offset
-        })
     });
 }
 

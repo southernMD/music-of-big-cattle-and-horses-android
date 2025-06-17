@@ -72,6 +72,7 @@ export const handlePlaySong = async (song: Song | djItemSong, type: 'dj' | 'play
             } else {
                 // 电台节目已在播放列表中，直接切换到该索引
                 useMusicPlayer.playingIndex = indexInPlayingList;
+                useMusicPlayer.playingId = (song as djItemSong).mainTrackId;
             }
         }
     } else {

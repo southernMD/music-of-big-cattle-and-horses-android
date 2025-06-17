@@ -1,6 +1,7 @@
 // src/api/init.ts
 
 import { BASE_URL, TIMEOUT } from "@/constants/api";
+import { getCredentials } from "@/utils/keychain";
 
 // 全局请求拦截器
 const requestInterceptor = (config: RequestInit): RequestInit => {
@@ -43,11 +44,19 @@ export async function customFetch(url: string, config: RequestInit = {}, jsonFla
     // 创建 AbortController 用于超时控制
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
     try {
-        // 应用全局请求拦截器
+        let cookieCredentials = await getCredentials()
+        let cookie = ''
+        if(cookieCredentials) cookie = cookieCredentials.password
+        else cookie = ""
+        
         const modifiedConfig = requestInterceptor({
             ...config,
             credentials: 'include',
-            signal: controller.signal, // 将 AbortSignal 添加到配置中
+            signal: controller.signal,
+            headers: {
+                ...config.headers,
+                'Cookie': cookie,
+            },
         });
 
         // 发起请求

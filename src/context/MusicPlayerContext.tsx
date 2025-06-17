@@ -27,6 +27,7 @@ import TrackPlayer, { useProgress, usePlaybackState, RepeatMode, PlaybackActiveT
 import { Event, State } from 'react-native-track-player';
 import { Song } from '@/types/Song';
 import { djItemSong } from '@/types/api/djItem';
+import { Toast } from '@ant-design/react-native';
 
 interface MiniPlayerContextValue {
     setMiniPlayer: (title: string, artist: string, progress: number, cover: string) => void;
@@ -47,6 +48,7 @@ interface MiniPlayerContextValue {
     removeFromPlayingList:(id:number,index:number) => void;
     removeAllFromPlayingList:() => void;
     updatePlayingList:(newList: (Song | djItemSong)[]) => void;
+    loadAndPlaySongById:(id: number) => void;
 }
 
 interface MusicPlayerProps { 
@@ -67,7 +69,8 @@ const MiniPlayerContext = createContext<MiniPlayerContextValue>({
     playPrev: () => { },
     removeFromPlayingList:() => {},
     removeAllFromPlayingList:() => {},
-    updatePlayingList:() => {}
+    updatePlayingList:() => {},
+    loadAndPlaySongById:() => {}
 });
 
 const SIZE = 25;
@@ -207,14 +210,19 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
         };
     }, []);
     
-    useEffect(() => {
-        if (musicPlayer.playingId <= 0) return;
+    // 添加一个 ref 来跟踪重试次数和当前正在重试的歌曲 ID
+    const retryCountRef = useRef<{count: number, id: number}>({count: 0, id: -1});
+    
+    // 加载并播放歌曲的函数
+    const loadAndPlaySongById = async (playingId: number) => {
+        if (playingId <= 0) return;
+        
         TrackPlayer.pause();
-        console.log(`开始加载歌曲: ${musicPlayer.playingId}`);
-        TrackPlayer.setVolume(1)
+        console.log(`开始加载歌曲: ${playingId}`);
+        TrackPlayer.setVolume(1);
         
         // 记录当前正在加载的歌曲ID
-        const currentLoadingId = musicPlayer.playingId;
+        const currentLoadingId = playingId;
         currentLoadingIdRef.current = currentLoadingId;
 
         // 设置锁
@@ -231,142 +239,180 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
         const controller = new AbortController();
         controllerRef.current = controller;
         
-        SongUrl(currentLoadingId, controller)
-            .then(async ({ data }) => {
-                // 如果请求已被取消或ID已更改，不继续处理
-                if (controller.signal.aborted || currentLoadingId !== currentLoadingIdRef.current) {
-                    console.log('请求已取消或ID已更改，不加载音频');
-                    playLockRef.current = false;
-                    return;
-                }
-                
-                controllerRef.current = null;
-                const [{ url }] = data;
-                const httpSong = convertHttpToHttps(url);
-                console.log(httpSong, 'songURl');
-                
-                // 再次检查
-                if (currentLoadingId !== currentLoadingIdRef.current) {
-                    console.log('ID已更改');
-                    playLockRef.current = false;
-                    return;
-                }
-
-                // 获取当前播放歌曲信息
-                const playingSong = useMusicPlayer.playingList[useMusicPlayer.playingIndex];
-                // console.log(useMusicPlayer.playingIndex,useMusicPlayer.playingList,">>><MNOBI HJNM");
-                
-                const name = 'dj' in playingSong ? playingSong.name : `${playingSong.name} ${playingSong.tns?.length ? `(${playingSong.tns[0]})` : ''} ${playingSong.alia?.length ? `(${playingSong.alia[0]})` : ''}`;
-                const artist = 'ar' in playingSong ? 
-                            playingSong.ar.map(item => item.name).join('/') : 
-                            playingSong.dj.nickname
-                
-                // 更新播放信息
-                useMusicPlayer.playingName = name;
-                useMusicPlayer.playingAl = 'al' in playingSong ? 
-                                        {id:playingSong.al.id,name:playingSong.al.name}: 
-                                        {id:playingSong.radio.id,name:playingSong.radio.name}
-                useMusicPlayer.playingAr = 'ar' in playingSong ? 
-                                        playingSong.ar.map(item => ({id:item.id,name:item.name})):
-                                        [{id:playingSong.dj.userId,name:playingSong.dj.nickname}]
-                setMiniPlayer(name, 
-                    artist + '-' + ('al' in playingSong ? playingSong.al.name : playingSong.radio.name),
-                    0,
-                    convertHttpToHttps('al' in playingSong ? playingSong.al.picUrl : playingSong.coverUrl)
-                );
-                
-                try {
-                    let TrackQueue = [];
-                    // 重置 TrackPlayer
-                    
-                    // 添加将要播放歌曲到 TrackPlayer
-                    TrackQueue.push({
-                        id: 'dj' in playingSong ? playingSong.mainTrackId : playingSong.id,
-                        url: httpSong,
-                        title: name,
-                        artist: artist,
-                        album: 'al' in playingSong ? playingSong.al.name : playingSong.radio.name,
-                        artwork: convertHttpToHttps('al' in playingSong ? playingSong.al.picUrl : playingSong.coverUrl),
-                        duration: 0, 
-                    })
-                    //计算下一首曲目
-                    const currentPlayingType = await getItem('playingType');
-                    // const playingList = useMusicPlayer.playingList;
-                    // const currentIndex = useMusicPlayer.playingIndex;
-                    if(currentPlayingType === PLAYING_LIST_TYPE.LOOP_ONE || useMusicPlayer.playingList.length === 1 || currentPlayingType === PLAYING_LIST_TYPE.LOOP){
-                        const nextIndex = (useMusicPlayer.playingIndex + 1) % useMusicPlayer.playingList.length;
-                        const nextSong = useMusicPlayer.playingList[nextIndex];
-                        const nextName = 'dj' in nextSong ? `${nextSong.name}`: `${nextSong.name} ${nextSong.tns?.length ? `(${nextSong.tns[0]})` : ''} ${nextSong.alia?.length ? `(${nextSong.alia[0]})` : ''}`;
-                        const nextArtist = 'ar' in nextSong ? nextSong.ar.map(item => item.name).join('/') : nextSong.dj.nickname;
-                        const nexSong = useMusicPlayer.playingList[nextIndex]
-                        TrackQueue.push({
-                            id: 'dj' in nexSong ? nexSong.mainTrackId : nexSong.id,
-                            url: httpSong,
-                            title: nextName,
-                            artist: nextArtist,
-                            album: 'al' in nextSong ? nextSong.al.name : nextSong.radio.name,
-                            artwork: convertHttpToHttps('al' in nextSong ? nextSong.al.picUrl : nextSong.coverUrl),
-                            duration: 0, 
-                        })
-                    }else if(currentPlayingType === PLAYING_LIST_TYPE.RANDOM){
-                        let randomIndex;
-                        do {
-                            randomIndex = getCryptoRandomInt(0, useMusicPlayer.playingList.length - 1);
-                        } while (randomIndex === useMusicPlayer.playingIndex);
-                        const randomSong = useMusicPlayer.playingList[randomIndex];
-                        const randomName = 'dj' in randomSong ? `${randomSong.name}`: `${randomSong.name} ${randomSong.tns?.length ? `(${randomSong.tns[0]})` : ''} ${randomSong.alia?.length ? `(${randomSong.alia[0]})` : ''}`
-                        const randomArtist = 'ar' in randomSong ? randomSong.ar.map(item => item.name).join('/') : randomSong.dj.nickname;
-                        TrackQueue.push({
-                            id: 'dj' in randomSong? randomSong.mainTrackId : randomSong.id,
-                            url: httpSong,
-                            title: randomName,
-                            artist: randomArtist,
-                            album: 'al' in randomSong ? randomSong.al.name : randomSong.radio.name,
-                            artwork: convertHttpToHttps('al' in randomSong ? randomSong.al.picUrl : randomSong.coverUrl),
-                            duration: 0, 
-                        });
-
-                    }
-                    await TrackPlayer.setQueue(TrackQueue);
-                    // console.log(await TrackPlayer.getQueue());
-                    
-                    await TrackPlayer.seekTo(0)
-                    // 播放歌曲
-                    await TrackPlayer.play();
-                    useMusicPlayer.playStatus = 'play';
-
-                    await getItem('playingType').then(async currentPlayingType => {
-                        
-                        // 如果是单曲循环或只有一首歌，设置单曲无限循环，随机与列表循环采用列表循环，随机播放已经提前计算好
-                        if (currentPlayingType === PLAYING_LIST_TYPE.LOOP_ONE || 
-                            (useMusicPlayer.playingList.length === 1)) {
-                                console.log("是单曲循环");
-                                await TrackPlayer.setRepeatMode(RepeatMode.Track);
-                        }else{
-                            console.log("是列表循环");
-                            await TrackPlayer.setRepeatMode(RepeatMode.Queue);
-                        }
-                    });
-                    
-                    
-                    // 释放锁
-                    playLockRef.current = false;
-                } catch (error) {
-                    console.error('TrackPlayer 错误:', error);
-                    playLockRef.current = false;
-                }
-            })
-            .catch(error => {
-                if (error.message !== 'AbortError') {
-                    console.error('Error fetching song URL:', error);
-                }
+        try {
+            const { data } = await SongUrl(currentLoadingId, controller);
+            
+            // 如果请求已被取消或ID已更改，不继续处理
+            if (controller.signal.aborted || currentLoadingId !== currentLoadingIdRef.current) {
+                console.log('请求已取消或ID已更改，不加载音频');
                 playLockRef.current = false;
+                return;
+            }
+            
+            controllerRef.current = null;
+            const [{ url }] = data;
+            const httpSong = convertHttpToHttps(url);
+            console.log(httpSong, 'songURl');
+            
+            // 再次检查
+            if (currentLoadingId !== currentLoadingIdRef.current) {
+                console.log('ID已更改');
+                playLockRef.current = false;
+                return;
+            }
+
+            // 获取当前播放歌曲信息
+            const playingSong = useMusicPlayer.playingList[useMusicPlayer.playingIndex];
+            
+            const name = 'dj' in playingSong ? playingSong.name : `${playingSong.name} ${playingSong.tns?.length ? `(${playingSong.tns[0]})` : ''} ${playingSong.alia?.length ? `(${playingSong.alia[0]})` : ''}`;
+            const artist = 'ar' in playingSong ? 
+                        playingSong.ar.map(item => item.name).join('/') : 
+                        playingSong.dj.nickname;
+            
+            // 更新播放信息
+            useMusicPlayer.playingName = name;
+            useMusicPlayer.playingAl = 'al' in playingSong ? 
+                                    {id:playingSong.al.id,name:playingSong.al.name}: 
+                                    {id:playingSong.radio.id,name:playingSong.radio.name};
+            useMusicPlayer.playingAr = 'ar' in playingSong ? 
+                                    playingSong.ar.map(item => ({id:item.id,name:item.name})):
+                                    [{id:playingSong.dj.userId,name:playingSong.dj.nickname}];
+            setMiniPlayer(name, 
+                artist + '-' + ('al' in playingSong ? playingSong.al.name : playingSong.radio.name),
+                0,
+                convertHttpToHttps('al' in playingSong ? playingSong.al.picUrl : playingSong.coverUrl)
+            );
+            
+            let TrackQueue = [];
+            // 添加将要播放歌曲到 TrackPlayer
+            TrackQueue.push({
+                id: 'dj' in playingSong ? playingSong.mainTrackId : playingSong.id,
+                url: httpSong,
+                title: name,
+                artist: artist,
+                album: 'al' in playingSong ? playingSong.al.name : playingSong.radio.name,
+                artwork: convertHttpToHttps('al' in playingSong ? playingSong.al.picUrl : playingSong.coverUrl),
+                duration: 0, 
             });
+            
+            //计算下一首曲目
+            const currentPlayingType = await getItem('playingType');
+            
+            if(currentPlayingType === PLAYING_LIST_TYPE.LOOP_ONE || useMusicPlayer.playingList.length === 1 || currentPlayingType === PLAYING_LIST_TYPE.LOOP){
+                const nextIndex = (useMusicPlayer.playingIndex + 1) % useMusicPlayer.playingList.length;
+                const nextSong = useMusicPlayer.playingList[nextIndex];
+                const nextName = 'dj' in nextSong ? `${nextSong.name}`: `${nextSong.name} ${nextSong.tns?.length ? `(${nextSong.tns[0]})` : ''} ${nextSong.alia?.length ? `(${nextSong.alia[0]})` : ''}`;
+                const nextArtist = 'ar' in nextSong ? nextSong.ar.map(item => item.name).join('/') : nextSong.dj.nickname;
+                const nexSong = useMusicPlayer.playingList[nextIndex];
+                TrackQueue.push({
+                    id: 'dj' in nexSong ? nexSong.mainTrackId : nexSong.id,
+                    url: httpSong,
+                    title: nextName,
+                    artist: nextArtist,
+                    album: 'al' in nextSong ? nextSong.al.name : nextSong.radio.name,
+                    artwork: convertHttpToHttps('al' in nextSong ? nextSong.al.picUrl : nextSong.coverUrl),
+                    duration: 0, 
+                });
+            } else if(currentPlayingType === PLAYING_LIST_TYPE.RANDOM){
+                let randomIndex;
+                do {
+                    randomIndex = getCryptoRandomInt(0, useMusicPlayer.playingList.length - 1);
+                } while (randomIndex === useMusicPlayer.playingIndex);
+                const randomSong = useMusicPlayer.playingList[randomIndex];
+                const randomName = 'dj' in randomSong ? `${randomSong.name}`: `${randomSong.name} ${randomSong.tns?.length ? `(${randomSong.tns[0]})` : ''} ${randomSong.alia?.length ? `(${randomSong.alia[0]})` : ''}`;
+                const randomArtist = 'ar' in randomSong ? randomSong.ar.map(item => item.name).join('/') : randomSong.dj.nickname;
+                TrackQueue.push({
+                    id: 'dj' in randomSong? randomSong.mainTrackId : randomSong.id,
+                    url: httpSong,
+                    title: randomName,
+                    artist: randomArtist,
+                    album: 'al' in randomSong ? randomSong.al.name : randomSong.radio.name,
+                    artwork: convertHttpToHttps('al' in randomSong ? randomSong.al.picUrl : randomSong.coverUrl),
+                    duration: 0, 
+                });
+            }
+            
+            TrackQueue.push({
+                id: new Date().getTime(),
+                url: "https://www.southernmd.top",
+                title: "好音乐用牛马",
+                artist: "",
+                album: "",
+                artwork: "icon",
+            });
+            
+            await TrackPlayer.setQueue(TrackQueue);
+            await TrackPlayer.seekTo(0);
+            await TrackPlayer.play();
+            useMusicPlayer.playStatus = 'play';
+
+            // 设置播放模式
+            if (currentPlayingType === PLAYING_LIST_TYPE.LOOP_ONE || 
+                (useMusicPlayer.playingList.length === 1)) {
+                console.log("是单曲循环");
+                await TrackPlayer.setRepeatMode(RepeatMode.Track);
+            } else {
+                console.log("是列表循环");
+                await TrackPlayer.setRepeatMode(RepeatMode.Queue);
+            }
+        } catch (error: any) {
+            if (error.message !== 'AbortError') {
+                console.error('Error fetching song URL or playing track:', error);
+            }
+        } finally {
+            // 释放锁
+            playLockRef.current = false;
+        }
+    };
+    useEffect(()=>{
+        // 添加事件监听器并保存返回的订阅对象
+        const subscription = TrackPlayer.addEventListener(Event.PlaybackState, (event) => {
+            if(event.state === State.Error){
+                if(event.error.code === "android-io-bad-http-status"){
+                    // 检查是否是同一首歌的重试
+                    if(retryCountRef.current.id === useMusicPlayer.playingId) {
+                        // 增加重试次数
+                        retryCountRef.current.count++;
+                        console.log(`重试播放歌曲 ${useMusicPlayer.playingId}，第 ${retryCountRef.current.count} 次尝试`);
+                        
+                        // 如果重试次数小于 3，则重新加载歌曲
+                        if(retryCountRef.current.count < 3) {
+                            loadAndPlaySongById(useMusicPlayer.playingId);
+                        } else {
+                            console.warn(`歌曲 ${useMusicPlayer.playingId} 重试次数已达上限 (3次)，不再重试`);
+                            Toast.fail('无法播放歌曲');
+                        }
+                    } else {
+                        // 新的歌曲，重置重试计数器
+                        retryCountRef.current = {count: 1, id: useMusicPlayer.playingId};
+                        console.log(`开始重试播放歌曲 ${useMusicPlayer.playingId}，第 1 次尝试`);
+                        loadAndPlaySongById(useMusicPlayer.playingId);
+                    }
+                }
+            }
+        });
+        
+        // 在组件卸载时移除事件监听器
+        return () => {
+            // 如果订阅对象有 remove 方法，则调用它
+            if (subscription && typeof subscription.remove === 'function') {
+                subscription.remove();
+            }
+        };
+    },[])
+    
+    // 当播放ID变化时加载并播放歌曲
+    useEffect(() => {
+        // 重置重试计数器
+        retryCountRef.current = {count: 0, id: musicPlayer.playingId};
+        
+        // 加载并播放歌曲
+        loadAndPlaySongById(musicPlayer.playingId);
         
         // 返回清理函数
         return () => {
             // 如果ID已更改，取消当前请求
-            if (currentLoadingId === currentLoadingIdRef.current && controllerRef.current) {
+            if (controllerRef.current) {
                 controllerRef.current.abort();
                 controllerRef.current = null;
             }
@@ -597,7 +643,8 @@ export const MiniPlayerProvider: React.FC<MusicPlayerProps> = memo(({ children, 
         playPrev,
         removeFromPlayingList,
         removeAllFromPlayingList,
-        updatePlayingList
+        updatePlayingList,
+        loadAndPlaySongById
     };
 
     // 使用主题创建样式
